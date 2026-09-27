@@ -27,7 +27,7 @@ app.use(cors({
     } else {
       const allowedOrigins = [
         'http://localhost:5173',
-        'https://grasty-mern-capstone-fe.netlify.app',
+        'https://socialmatchmaker.netlify.app',
         ...(process.env.ALLOWED_ORIGINS
             ? process.env.ALLOWED_ORIGINS.split(',')
             : []),
