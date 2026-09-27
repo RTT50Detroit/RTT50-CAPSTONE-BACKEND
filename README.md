@@ -55,7 +55,7 @@ This is a backend application built using **Node.js** and **Express.js**, with a
 ### Prerequisites
 
 Ensure you have the following installed in your environment:
-- **Node.js** (v16.0.0 or above)
+- **Node.js** (v20.0.0 or above)
 - **npm** (Node Package Manager)
 - **MongoDB** (Running locally or as a cloud-based instance)
 
