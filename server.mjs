@@ -27,7 +27,7 @@ app.use(cors({
     } else {
       const allowedOrigins = [
         'http://localhost:5173',
-        'https://socialmatchmaker.netlify.app',
+        // 'https://socialmatchmaker.netlify.app',
         'https://socialmatchfrontend.onrender.com',
         ...(process.env.ALLOWED_ORIGINS
             ? process.env.ALLOWED_ORIGINS.split(',')
