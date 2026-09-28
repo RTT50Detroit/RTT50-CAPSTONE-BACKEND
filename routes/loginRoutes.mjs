@@ -5,7 +5,7 @@ import Registration from '../models/registration.mjs';
 
 const router = express.Router();
 
-router.post('/', async (req, res) => {
+router.post(['/', '/login'], async (req, res) => {
   const { email, password } = req.body;
   try {
     // Find registrant by email
