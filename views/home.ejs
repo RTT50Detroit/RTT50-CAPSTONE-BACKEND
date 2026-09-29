@@ -3,25 +3,55 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Home - Member's Listing</title>
-    <!-- Ensure `public/styles.css` contains the necessary CSS for styling -->
-    <link rel="stylesheet" href="../public/css/cardStyles.css">
+    <title>Social Match | Members</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/cardStyles.css">
 </head>
 <body>
-<h1 style="text-align: center;">Social Match: Member's Listing</h1>
-<div class="profile-container">
-    <% registrants.forEach(registrant => { %>
-        <div class="profile-card">
-            <img
-                    src="<%= registrant.photo %>"
-                    alt="<%= registrant.name %>'s Profile Picture"
-            />
-            <h2><%= registrant.name || 'Unknown Name' %></h2>
-            <p><label>Age:</label> <%= registrant.age || 'N/A' %></p>
-            <p><label>Gender:</label> <%= registrant.gender || 'N/A' %></p>
-            <p><label>Registered At:</label> <%= new Date(registrant.createdAt).toLocaleString() || 'N/A' %></p>
-        </div>
-    <% }); %>
-</div>
+<header class="site-header">
+    <a class="brand" href="/" aria-label="Social Match home">
+        <span class="brand-mark">S</span>
+        <span>Social Match</span>
+    </a>
+    <span class="header-status"><span class="status-dot"></span>Find your people</span>
+</header>
+
+<main class="page-shell">
+    <section class="page-intro">
+        <p class="eyebrow">The community</p>
+        <h1>Meet the people<br><em>worth knowing.</em></h1>
+        <p class="intro-copy">Browse the latest members and discover your next meaningful connection.</p>
+        <div class="member-count"><strong><%= registrants.length %></strong> <span>members and counting</span></div>
+    </section>
+
+    <section class="profile-container" aria-label="Member profiles">
+        <% if (registrants.length) { %>
+            <% registrants.forEach(registrant => { %>
+                <article class="profile-card">
+                    <div class="profile-image-wrap">
+                        <img src="<%= registrant.photo || '/images/female.png' %>" alt="<%= registrant.name || 'Member' %>'s profile picture" />
+                        <span class="profile-badge">New member</span>
+                    </div>
+                    <div class="profile-content">
+                        <h2><%= registrant.name || 'Unknown Name' %></h2>
+                        <div class="profile-details">
+                            <span><b>Age</b><%= registrant.age || 'N/A' %></span>
+                            <span><b>Gender</b><%= registrant.gender || 'N/A' %></span>
+                        </div>
+                        <p class="joined-date">Joined <%= registrant.createdAt ? new Date(registrant.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'recently' %></p>
+                    </div>
+                </article>
+            <% }); %>
+        <% } else { %>
+            <div class="empty-state">
+                <span class="empty-icon">+</span>
+                <h2>Your community starts here.</h2>
+                <p>No members have joined yet.</p>
+            </div>
+        <% } %>
+    </section>
+</main>
 </body>
 </html>
