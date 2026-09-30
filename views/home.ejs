@@ -27,6 +27,29 @@
         <div class="member-count"><strong><%= registrants.length %></strong> <span>members and counting</span></div>
     </section>
 
+    <section class="filter-panel" aria-label="Member filters">
+        <form method="GET" class="filter-form">
+            <label>
+                <span>Sex</span>
+                <select name="gender">
+                    <option value="">All</option>
+                    <option value="male" <%= filters && filters.gender === 'male' ? 'selected' : '' %>>Male</option>
+                    <option value="female" <%= filters && filters.gender === 'female' ? 'selected' : '' %>>Female</option>
+                </select>
+            </label>
+            <label>
+                <span>Min age</span>
+                <input type="number" name="minAge" min="18" max="100" value="<%= filters && filters.minAge ? filters.minAge : '' %>" placeholder="18" />
+            </label>
+            <label>
+                <span>Max age</span>
+                <input type="number" name="maxAge" min="18" max="100" value="<%= filters && filters.maxAge ? filters.maxAge : '' %>" placeholder="60" />
+            </label>
+            <button type="submit">Apply filters</button>
+            <a href="/" class="clear-filter">Clear</a>
+        </form>
+    </section>
+
     <section class="profile-container" aria-label="Member profiles">
         <% if (registrants.length) { %>
             <% registrants.forEach(registrant => { %>

@@ -23,12 +23,39 @@ router.delete('/', authenticate, async (req, res) => {
 // RETRIEVE ALL MEMBERS OR FILTER BY QUERY PARAMETERS
 router.get('/', async (req, res) => {
   try {
-    const { name, age, gender } = req.query;
+    const { name, age, gender, minAge, maxAge } = req.query;
     const filters = {};
 
     if (name) filters.name = { $regex: name, $options: 'i' };
-    if (age) filters.age = { $regex: age, $options: 'i' };
-    if (gender) filters.gender = { $regex: gender, $options: 'i' };
+
+    if (gender) {
+      filters.gender = { $regex: new RegExp(String(gender).trim(), 'i') };
+    }
+
+    if (age !== undefined && age !== '') {
+      const parsedAge = Number(age);
+      if (!Number.isNaN(parsedAge)) {
+        filters.age = parsedAge;
+      }
+    }
+
+    if (minAge !== undefined || maxAge !== undefined) {
+      filters.age = filters.age && typeof filters.age === 'object' ? filters.age : {};
+
+      if (minAge !== undefined && minAge !== '') {
+        const parsedMinAge = Number(minAge);
+        if (!Number.isNaN(parsedMinAge)) {
+          filters.age.$gte = parsedMinAge;
+        }
+      }
+
+      if (maxAge !== undefined && maxAge !== '') {
+        const parsedMaxAge = Number(maxAge);
+        if (!Number.isNaN(parsedMaxAge)) {
+          filters.age.$lte = parsedMaxAge;
+        }
+      }
+    }
 
     const results = await Member.find(filters);
     return res.status(200).json(results);
@@ -94,18 +121,45 @@ router.delete('/:id', validate_route_param_id, async (req, res) => {
   }
 });
 
-// RETRIEVE BY FILTER (NAME OR GENDER)
+// RETRIEVE BY FILTER (NAME, GENDER, OR AGE RANGE)
 router.get('/filter', async (req, res) => {
-  const { name, gender } = req.query;
+  const { name, gender, age, minAge, maxAge } = req.query;
 
   try {
     const filters = {};
-    if (name) filters.name = { $regex: new RegExp(name, 'i') }; // Case-insensitive search
+    if (name) filters.name = { $regex: new RegExp(name, 'i') };
+
     if (gender) {
-      if (!['male', 'female'].includes(gender.toLowerCase())) {
+      const normalizedGender = String(gender).trim().toLowerCase();
+      if (!['male', 'female'].includes(normalizedGender)) {
         return res.status(400).json({ error: 'Invalid gender filter. Allowed: male, female' });
       }
-      filters.gender = gender.toLowerCase();
+      filters.gender = { $regex: new RegExp(normalizedGender, 'i') };
+    }
+
+    if (age !== undefined && age !== '') {
+      const parsedAge = Number(age);
+      if (!Number.isNaN(parsedAge)) {
+        filters.age = parsedAge;
+      }
+    }
+
+    if (minAge !== undefined || maxAge !== undefined) {
+      filters.age = filters.age && typeof filters.age === 'object' ? filters.age : {};
+
+      if (minAge !== undefined && minAge !== '') {
+        const parsedMinAge = Number(minAge);
+        if (!Number.isNaN(parsedMinAge)) {
+          filters.age.$gte = parsedMinAge;
+        }
+      }
+
+      if (maxAge !== undefined && maxAge !== '') {
+        const parsedMaxAge = Number(maxAge);
+        if (!Number.isNaN(parsedMaxAge)) {
+          filters.age.$lte = parsedMaxAge;
+        }
+      }
     }
 
     const filtered_data = await Member.find(filters);
