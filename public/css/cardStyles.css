@@ -129,6 +129,90 @@ h1 em {
   font-size: .88rem;
 }
 
+.filter-panel {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(23, 37, 45, 0.05);
+  margin: 0 0 32px;
+  padding: 18px 20px;
+  backdrop-filter: blur(6px);
+}
+
+.filter-form {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.filter-form label {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-form span {
+  color: var(--muted);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.filter-form select,
+.filter-form input {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  font: inherit;
+  min-height: 46px;
+  padding: 12px 14px;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.filter-form select:focus,
+.filter-form input:focus {
+  border-color: rgba(232, 120, 97, 0.7);
+  box-shadow: 0 0 0 4px rgba(232, 120, 97, 0.12);
+  outline: none;
+}
+
+.filter-form button,
+.clear-filter {
+  align-items: center;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 18px;
+  text-decoration: none;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.filter-form button {
+  background: linear-gradient(135deg, var(--coral), #d16a5f);
+  box-shadow: 0 10px 18px rgba(232, 120, 97, 0.2);
+  color: white;
+}
+
+.filter-form button:hover,
+.clear-filter:hover {
+  transform: translateY(-1px);
+}
+
+.clear-filter {
+  background: #f2f4f1;
+  color: var(--ink);
+  min-width: 90px;
+}
+
 .profile-container {
   display: flex;
   flex-wrap: wrap;
@@ -253,6 +337,17 @@ h1 em {
 
   .page-shell {
     padding: 52px 20px 72px;
+  }
+
+  .filter-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .filter-form label,
+  .filter-form button,
+  .clear-filter {
+    width: 100%;
   }
 
   h1 {
