@@ -5,6 +5,16 @@ import upload from '../config/multer.mjs';
 
 const router = express.Router();
 
+const getDefaultProfileImage = (gender) => {
+  const normalizedGender = String(gender ?? '').trim().toLowerCase();
+
+  if (normalizedGender.startsWith('male') || normalizedGender === 'm' || normalizedGender === 'man') {
+    return '/images/male.png';
+  }
+
+  return '/images/female.png';
+};
+
 router.get('/filter', async (req, res) => {
   try {
     const gender = req.query.gender;
@@ -46,7 +56,7 @@ router.post('/', upload.single('photo'), async (req, res) => {
     // Check if a photo is uploaded
     const profileImage = req.file
                          ? `/uploads/${req.file.filename}` // Use uploaded file path
-                         : `https://api.dicebear.com/5.x/initials/svg?seed=${req.body.name || 'Default'}`; // Auto-generate profile av
+                         : getDefaultProfileImage(req.body.gender); // Use a gender-matched default image
 
     const create = await Registration.create({ ...req.body, password: hashedPassword, profileImage, });
     console.log('Registration created:', create);

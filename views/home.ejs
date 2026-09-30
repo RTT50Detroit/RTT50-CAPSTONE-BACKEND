@@ -32,7 +32,7 @@
             <% registrants.forEach(registrant => { %>
                 <article class="profile-card">
                     <div class="profile-image-wrap">
-                        <img src="<%= registrant.photo || '/images/female.png' %>" alt="<%= registrant.name || 'Member' %>'s profile picture" />
+                        <img src="<%= registrant.photo || (registrant.gender && registrant.gender.toLowerCase().startsWith('male') ? '/images/male.png' : '/images/female.png') %>" alt="<%= registrant.name || 'Member' %>'s profile picture" />
                         <span class="profile-badge">New member</span>
                     </div>
                     <div class="profile-content">

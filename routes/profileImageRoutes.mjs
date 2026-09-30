@@ -14,6 +14,16 @@ const upload = multer({
     dest: path.join(__dirname, "uploads/"),
 });
 
+const getDefaultProfileImage = (gender) => {
+    const normalizedGender = String(gender ?? '').trim().toLowerCase();
+
+    if (normalizedGender.startsWith('male') || normalizedGender === 'm' || normalizedGender === 'man') {
+        return '/images/male.png';
+    }
+
+    return '/images/female.png';
+};
+
 // API to get profile image by user id
 router.get("/:id", async (req, res) => {
     const { id } = req.params;
@@ -22,15 +32,17 @@ router.get("/:id", async (req, res) => {
         // Find the user in the database using _id
         const member = await RegistrationModel.findById(id);
 
-        if (!member || !member.profileImage) {
+        if (!member) {
             return res.status(404).json({
                 message: "Profile image not found",
             });
         }
 
+        const profileImageUrl = member.profileImage || getDefaultProfileImage(member.gender);
+
         // Respond with the profileImage URL
         res.json({
-            profileImageUrl: member.profileImage,
+            profileImageUrl,
         });
     } catch (err) {
         console.error("Error fetching profile image:", err);
