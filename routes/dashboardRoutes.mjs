@@ -1,5 +1,4 @@
 import express from 'express';
-import authMiddleware from '../middleware/authentication.mjs';
 import authenticate from '../middleware/authentication.mjs';
 
 const router = express.Router();
@@ -11,7 +10,7 @@ const profiles = [
   { id: 3, name: "Alice Brown", bio: "Food blogger and photographer." }
 ];
 
-router.get('/', authMiddleware, (req, res) => {
+router.get('/', authenticate, (req, res) => {
   // If the token is valid, the middleware attaches `req.registrant` with the
   // decoded payload
   res.status(200).json({

@@ -136,7 +136,6 @@ Below are the available routes implemented in the backend:
 | `/api/members/aboutme` | `PATCH` | Yes | Update the authenticated user’s About Me content. |
 | `/api/members/profile-image/:id` | `GET` | No | Return the profile image URL for a member. |
 | `/api/members/profile-image/:id` | `POST` | No | Upload and save a new profile image for a member. |
-| `/api/members/` | `GET` | Yes (token required in mock route) | Return profile-card payloads for the app UI. |
 | `/` | `GET` | No | Home page showing filtered registrants and member cards. |
 
 ### Static and Home Routes
@@ -145,7 +144,6 @@ Below are the available routes implemented in the backend:
 - Static assets served from:
   - `/public`
   - `/views`
-  - `/data`
 
 ---
 
@@ -171,8 +169,7 @@ project-folder/
 │   ├── dashboardRoutes.mjs
 │   ├── noteRoutes.mjs
 │   ├── aboutMeRoutes.mjs
-│   ├── profileImageRoutes.mjs
-│   └── profileCardRoutes.mjs
+│   └── profileImageRoutes.mjs
 │
 ├── public/              # Static files (e.g., CSS, images)
 ├── views/               # EJS files for rendering templates
@@ -193,16 +190,6 @@ Below are the available scripts in the `package.json` file:
 - **Start the server**:
   ```bash
   npm run start
-  ```
-
-- **Development server**:
-  ```bash
-  npm run dev
-  ```
-
-- **Lint the code**:
-  ```bash
-  npm run lint
   ```
 
 ---

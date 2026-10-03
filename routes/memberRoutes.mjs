@@ -64,19 +64,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// RETRIEVE BY ID
-router.get('/:id', validate_route_param_id, async (req, res) => {
-  try {
-    const get_one = await Member.findById(req.params.id);
-    if (!get_one) {
-      return res.status(404).json({ error: 'Member not found' });
-    }
-    return res.status(200).json(get_one);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 // ADD NEW MEMBER
 router.post('/', async (req, res) => {
   try {
@@ -168,6 +155,19 @@ router.get('/filter', async (req, res) => {
     }
 
     return res.status(200).json(filtered_data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// RETRIEVE BY ID
+router.get('/:id', validate_route_param_id, async (req, res) => {
+  try {
+    const get_one = await Member.findById(req.params.id);
+    if (!get_one) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+    return res.status(200).json(get_one);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

@@ -1,12 +1,9 @@
-import dotenv from 'dotenv';
 import express from 'express';
 import { config } from 'dotenv';
 import conn from './config/db.mjs';
 import {logger} from './middleware/logger.mjs';
 
 import cors from 'cors';
-import path from 'path';
-import {fileURLToPath} from 'url';
 import Registration from './models/registration.mjs';
 
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
@@ -24,10 +21,6 @@ if (!process.env.JWT_SECRET) {
 const app = express();
 const port = process.env.PORT || 5000;
 conn();
-
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-                       ? process.env.ALLOWED_ORIGINS.split(',')
-                       : []; // Default to an empty array if not set
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -61,14 +54,12 @@ const LoginRoutes = await import('./routes/loginRoutes.mjs').then(
 const RegistrationRoutes = await import('./routes/registrationRoutes.mjs').then(
     module => module.default);
 const DashboardRoutes = await import('./routes/dashboardRoutes.mjs').then(
-    module => module.default);
+  module => module.default);
 const NoteRoutes = await import('./routes/noteRoutes.mjs').then(
     module => module.default);
 const AboutMeRoutes = await import('./routes/aboutMeRoutes.mjs').then(
     module => module.default);
 const ProfileImageRoutes = await import('./routes/profileImageRoutes.mjs').then(
-    module => module.default);
-const ProfileCardRoutes = await import('./routes/profileCardRoutes.mjs').then(
     module => module.default);
 
 // Route Definitions
@@ -79,7 +70,6 @@ app.use('/api/members/notes', NoteRoutes);
 app.use('/api/members/aboutme', AboutMeRoutes);
 app.use('/api/members/profile-image', ProfileImageRoutes);
 app.use('/api/members', MemberRoutes);
-app.use('/api/members/', ProfileCardRoutes);
 
 // Set configuration settings - key/value pairs
 app.set('public', './public'); // .static files are located
@@ -90,12 +80,8 @@ app.set('view engine', 'ejs');
 app.use(express.static('views'));
 app.use(express.static('public'));
 
-// Simulate __dirname in ES module
-const __filename = fileURLToPath(import.meta.url); // Get the file's full path
-const __dirname = path.dirname(__filename); // Get the file's directory path
-app.use('/data', express.static(path.join(__dirname, 'data')));
 // need for css to work on home route
-app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/public', express.static('public'));
 
 // Route Home
 app.get('/', async (req, res) => {
