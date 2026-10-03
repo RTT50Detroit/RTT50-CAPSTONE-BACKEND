@@ -1,5 +1,6 @@
 import express from 'express';
 import AboutMe from '../models/about.mjs';
+import Registration from '../models/registration.mjs';
 import dotenv from 'dotenv';
 import authenticate from '../middleware/authentication.mjs';
 const router = express.Router();
@@ -7,16 +8,31 @@ dotenv.config();
 
 
 // GET /'api/members'
-router.get('/', (req, res) => {
-  // Simulating real-world workflow: Check for valid token
-  const authHeader = req.headers.authorization;
+router.get('/', authenticate, async (req, res) => {
+  try {
+    const [members, aboutMeEntries] = await Promise.all([
+      Registration.find().sort({ createdAt: -1 }).lean(),
+      AboutMe.find().lean(),
+    ]);
+    const bioByUserId = new Map(
+        aboutMeEntries.map((entry) => [String(entry.userId), entry.content || ''])
+    );
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Unauthorized. Please provide a valid token.' });
+    const profiles = members.map((member) => ({
+      id: member._id,
+      name: member.name,
+      bio: bioByUserId.get(String(member._id)) || '',
+      photo: member.photo || member.profileImage,
+      age: member.age,
+      gender: member.gender,
+      createdAt: member.createdAt,
+    }));
+
+    return res.status(200).json({ success: true, profiles });
+  } catch (error) {
+    console.error('Error fetching AboutMe profiles:', error);
+    return res.status(500).json({ message: 'Failed to fetch AboutMe profiles.' });
   }
-
-  // Return the members (profile cards)
-  res.status(200).json(members); // Respond with the mock member data
 });
 
 
