@@ -24,15 +24,34 @@ This is a backend application built using **Node.js** and **Express.js**, with a
 
 ## Features
 
-- RESTful API Design.
-- User authentication and registration.
-- CORS control with dynamic origin support.
-- Template rendering using **EJS** for home routes.
-- Secure handling of static files.
-- Modular routing for scalability.
-- Centralized logging using custom middleware with **winston**.
-- Dynamic environment-based configuration using **dotenv**.
-- MongoDB integration using **Mongoose**.
+This application is a backend for a social matching platform that helps users register, authenticate, build profiles, and interact with other members.
+
+### Core Features
+
+- User registration and login with password hashing and JWT-based authentication.
+- Protected member routes for authenticated access to personal data and actions.
+- Member profile management with create, read, update, and delete support.
+- Gender-based and age-based filtering for member browsing on the home dashboard.
+- Profile image support using uploaded files or default gender-based avatars.
+- Personal notes feature for authenticated users to create, read, update, and delete notes.
+- About Me profile section for storing and updating user bio information.
+- Member card/profile views rendered through EJS templates for the app front end.
+- Dynamic home page that displays filtered registrant data from MongoDB.
+- CORS configuration for secure local and deployment environment access.
+- Centralized request logging with custom Winston middleware.
+- MongoDB persistence using Mongoose models for users, profiles, notes, and related data.
+
+### Business Use Case
+
+The app supports a matchmaking/social network workflow where members can:
+
+- sign up for an account
+- log in securely
+- manage personal profile information
+- upload a profile image
+- store personal notes
+- view and filter others in the member directory
+- maintain a public-facing profile card experience
 
 ---
 
@@ -99,16 +118,26 @@ Replace `<mongo_connection_uri>` and other placeholders with your actual configu
 
 Below are the available routes implemented in the backend:
 
-| Endpoint                       | Description                        | Method |
-|--------------------------------|------------------------------------|--------|
-| `/api/members`                 | Member-related actions             | All    |
-| `/api/register`                | User registration                  | POST   |
-| `/api/login`                   | User login                         | POST   |
-| `/api/dashboard`               | Dashboard data                     | GET    |
-| `/api/members/notes`           | Notes management                   | All    |
-| `/api/members/aboutme`         | About Me section                   | All    |
-| `/api/members/profile-image`   | Upload/manage profile images       | POST   |
-| `/api/members/`                | User profile cards (default route) | All    |
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/register` | `POST` | No | Register a new member and hash the password before saving it. |
+| `/api/login` | `POST` | No | Verify email/password and return a JWT token for authenticated routes. |
+| `/api/dashboard` | `GET` | Yes | Return dashboard data for the authenticated user. |
+| `/api/members` | `GET` | No | Fetch all members or filter by query parameters such as name, age, and gender. |
+| `/api/members/:id` | `GET` | No | Retrieve a single member by ID. |
+| `/api/members` | `POST` | No | Create a member record with required profile fields. |
+| `/api/members/:id` | `PUT` | No | Update a specific member record by ID. |
+| `/api/members/:id` | `DELETE` | No | Delete a member record by ID. |
+| `/api/members/filter` | `GET` | No | Return members matching name, gender, or age-range filters. |
+| `/api/members/notes` | `GET` | Yes | Return all notes for the authenticated user, newest first. |
+| `/api/members/notes` | `POST` | Yes | Create a new note associated with the authenticated user. |
+| `/api/members/notes/:id` | `PUT` | Yes | Update a specific note owned by the current user. |
+| `/api/members/notes/:id` | `DELETE` | Yes | Delete a note owned by the current user. |
+| `/api/members/aboutme` | `PATCH` | Yes | Update the authenticated user’s About Me content. |
+| `/api/members/profile-image/:id` | `GET` | No | Return the profile image URL for a member. |
+| `/api/members/profile-image/:id` | `POST` | No | Upload and save a new profile image for a member. |
+| `/api/members/` | `GET` | Yes (token required in mock route) | Return profile-card payloads for the app UI. |
+| `/` | `GET` | No | Home page showing filtered registrants and member cards. |
 
 ### Static and Home Routes
 

@@ -10,7 +10,16 @@ import {fileURLToPath} from 'url';
 import Registration from './models/registration.mjs';
 
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
-config({ path: '.env' });
+
+for (const file of [envFile, '.env']) {
+  config({ path: file });
+}
+
+if (!process.env.JWT_SECRET) {
+  // Local development fallback so login and protected note routes can work when no
+  // environment secret is configured yet. Production should set JWT_SECRET explicitly.
+  process.env.JWT_SECRET = 'dev-local-jwt-secret';
+}
 
 const app = express();
 const port = process.env.PORT || 5000;
