@@ -1,7 +1,7 @@
 import express from 'express';
 import AboutMe from '../models/about.mjs';
-import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import authenticate from '../middleware/authentication.mjs';
 const router = express.Router();
 dotenv.config();
 
@@ -21,17 +21,28 @@ router.get('/', (req, res) => {
 
 
 // Update Bio
-router.patch('/', async (req, res) => {
+router.patch('/', authenticate, async (req, res) => {
   const { bio } = req.body;
-  const token = req.header('Authorization').replace('Bearer ', '');
-  // const decoded = jwt.verify(token, 'your_secret_key');
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-  const member = await AboutMe.findById(decoded.id);
-  member.bio = bio;
-  await member.save();
+  if (typeof bio !== 'string') {
+    return res.status(400).json({ message: 'Bio is required.' });
+  }
 
-  res.send({ message: 'AboutMe updated successfully' });
+  try {
+    const aboutMe = await AboutMe.findOneAndUpdate(
+        { userId: req.user.id },
+        { userId: req.user.id, content: bio },
+        { new: true, upsert: true, runValidators: true }
+    );
+
+    return res.send({
+      message: 'AboutMe updated successfully',
+      aboutMe,
+    });
+  } catch (error) {
+    console.error('Error updating AboutMe:', error);
+    return res.status(500).json({ message: 'Failed to update AboutMe.' });
+  }
 });
 
 export default router;
