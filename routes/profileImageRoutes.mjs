@@ -3,6 +3,7 @@ import RegistrationModel from "../models/registration.mjs";
 import multer from 'multer';
 import path from 'path';
 import {fileURLToPath} from 'url';
+import authenticate from '../middleware/authentication.mjs';
 
 const router = express.Router();
 
@@ -52,9 +53,17 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-router.post("/:id", upload.single("profileImage"), async (req, res) => {
+router.post("/:id", authenticate, upload.single("profileImage"), async (req, res) => {
     const { id } = req.params;
-    const newImagePath = req.file.path;
+    if (String(req.user.id) !== String(id)) {
+        return res.status(403).json({ message: "You can only update your own profile image." });
+    }
+
+    if (!req.file) {
+        return res.status(400).json({ message: "A profile image is required." });
+    }
+
+    const newImagePath = `/uploads/${req.file.filename}`;
 
     try {
         const member = await RegistrationModel.findByIdAndUpdate(

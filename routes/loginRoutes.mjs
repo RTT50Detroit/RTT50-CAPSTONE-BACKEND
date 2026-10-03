@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import Registration from '../models/registration.mjs';
+import authenticate from '../middleware/authentication.mjs';
 
 const router = express.Router();
 
@@ -27,6 +28,11 @@ router.post(['/', '/login'], async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
+    await Registration.findByIdAndUpdate(registrant._id, {
+      isOnline: true,
+      lastSeen: new Date(),
+    });
+
     console.log('JWT_SECRET:', process.env.JWT_SECRET);
     // Generate JWT Token
     const token = jwt.sign(
@@ -39,6 +45,19 @@ router.post(['/', '/login'], async (req, res) => {
   } catch (err) {
     console.error('Error occurred:', err);
     res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+router.post('/logout', authenticate, async (req, res) => {
+  try {
+    await Registration.findByIdAndUpdate(req.user.id, {
+      isOnline: false,
+      lastSeen: new Date(),
+    });
+    return res.status(204).send();
+  } catch (err) {
+    console.error('Error updating presence on logout:', err);
+    return res.status(500).json({ message: 'Unable to update online status.' });
   }
 });
 

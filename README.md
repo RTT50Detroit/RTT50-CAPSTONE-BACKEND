@@ -29,6 +29,7 @@ This application is a backend for a social matching platform that helps users re
 ### Core Features
 
 - User registration and login with password hashing and JWT-based authentication.
+- Member online presence tracking with login, logout, and heartbeat updates.
 - Protected member routes for authenticated access to personal data and actions.
 - Member profile management with create, read, update, and delete support.
 - Gender-based and age-based filtering for member browsing on the home dashboard.
@@ -122,9 +123,11 @@ Below are the available routes implemented in the backend:
 |----------|--------|------|-------------|
 | `/api/register` | `POST` | No | Register a new member and hash the password before saving it. |
 | `/api/login` | `POST` | No | Verify email/password and return a JWT token for authenticated routes. |
+| `/api/login/logout` | `POST` | Yes | Mark the authenticated member offline. |
 | `/api/dashboard` | `GET` | Yes | Return dashboard data for the authenticated user. |
 | `/api/members` | `GET` | No | Fetch all members or filter by query parameters such as name, age, and gender. |
 | `/api/members/:id` | `GET` | No | Retrieve a single member by ID. |
+| `/api/members/presence` | `POST` | Yes | Refresh the authenticated member's online presence. |
 | `/api/members` | `POST` | No | Create a member record with required profile fields. |
 | `/api/members/:id` | `PUT` | No | Update a specific member record by ID. |
 | `/api/members/:id` | `DELETE` | No | Delete a member record by ID. |

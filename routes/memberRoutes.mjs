@@ -3,6 +3,7 @@ import Member from '../models/registration.mjs';
 import { logger } from '../middleware/logger.mjs';
 import authenticate from '../middleware/authentication.mjs';
 import { validate_route_param_id } from '../middleware/validate_request.mjs';
+import { withPresenceStatus } from '../utils/memberPresence.mjs';
 
 const router = express.Router();
 
@@ -57,10 +58,29 @@ router.get('/', async (req, res) => {
       }
     }
 
-    const results = await Member.find(filters);
+    const results = (await Member.find(filters).select('-password').lean())
+        .map(withPresenceStatus);
     return res.status(200).json(results);
   } catch (e) {
     res.status(500).json({ errors: e.message });
+  }
+});
+
+router.post('/presence', authenticate, async (req, res) => {
+  try {
+    const member = await Member.findByIdAndUpdate(
+        req.user.id,
+        { isOnline: true, lastSeen: new Date() },
+        { new: true, select: '_id isOnline lastSeen' },
+    );
+
+    if (!member) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+
+    return res.status(200).json(member);
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
   }
 });
 
@@ -149,7 +169,8 @@ router.get('/filter', async (req, res) => {
       }
     }
 
-    const filtered_data = await Member.find(filters);
+    const filtered_data = (await Member.find(filters).select('-password').lean())
+        .map(withPresenceStatus);
     if (filtered_data.length === 0) {
       return res.status(404).json({ message: 'No members found matching the criteria.' });
     }
@@ -163,7 +184,8 @@ router.get('/filter', async (req, res) => {
 // RETRIEVE BY ID
 router.get('/:id', validate_route_param_id, async (req, res) => {
   try {
-    const get_one = await Member.findById(req.params.id);
+    const member = await Member.findById(req.params.id).select('-password').lean();
+    const get_one = member && withPresenceStatus(member);
     if (!get_one) {
       return res.status(404).json({ error: 'Member not found' });
     }

@@ -2,6 +2,7 @@ import express from 'express';
 import Registration from '../models/registration.mjs';
 import bcrypt from 'bcrypt';
 import upload from '../config/multer.mjs';
+import { withPresenceStatus } from '../utils/memberPresence.mjs';
 
 const router = express.Router();
 
@@ -42,7 +43,9 @@ router.get('/:id', async (req, res) => {
   try {
     const user = await Registration.findById(req.params.id); // Find user by ID
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json(user); // Return user as JSON
+    const safeUser = user.toObject();
+    delete safeUser.password;
+    res.json(withPresenceStatus(safeUser)); // Return user as JSON
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -79,7 +82,9 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
 
     const updatedUser = await Registration.findByIdAndUpdate(req.params.id, updates, { new: true });
     if (!updatedUser) return res.status(404).json({ error: 'User not found' });
-    res.json(updatedUser);
+    const safeUser = updatedUser.toObject();
+    delete safeUser.password;
+    res.json(withPresenceStatus(safeUser));
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

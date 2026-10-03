@@ -14,7 +14,12 @@ const registrationSchema = new mongoose.Schema({
       }, photo: {
         type: String,
       }, profileImage: {
-        type: String
+        type: String,
+      }, isOnline: {
+        type: Boolean,
+        default: false,
+      }, lastSeen: {
+        type: Date,
       },
     },
     {timestamps: true},
