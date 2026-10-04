@@ -88,7 +88,7 @@ const setCookie = (res, name, value, maxAge) => {
     'Path=/',
     `Max-Age=${Math.floor(maxAge / 1000)}`,
     'HttpOnly',
-    'SameSite=Lax',
+    isProduction ? 'SameSite=None' : 'SameSite=Lax',
   ];
   if (isProduction) attributes.push('Secure');
   res.append('Set-Cookie', attributes.join('; '));

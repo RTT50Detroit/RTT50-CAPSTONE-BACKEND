@@ -13,7 +13,7 @@ const setSessionCookie = (res, token) => {
     'Path=/',
     'Max-Age=3600',
     'HttpOnly',
-    'SameSite=Lax',
+    isProduction ? 'SameSite=None' : 'SameSite=Lax',
     ...(isProduction ? ['Secure'] : []),
   ].join('; '));
 };
