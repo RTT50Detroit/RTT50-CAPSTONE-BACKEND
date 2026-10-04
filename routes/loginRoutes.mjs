@@ -36,8 +36,13 @@ router.post(['/', '/login'], async (req, res) => {
     console.log('JWT_SECRET:', process.env.JWT_SECRET);
     // Generate JWT Token
     const token = jwt.sign(
-        { id: registrant._id, email: registrant.email, role: registrant.role || 'member'
-            }, //Payload/DB use
+        {
+          id: registrant._id,
+          name: registrant.name,
+          email: registrant.email,
+          role: registrant.role || 'member',
+        },
+        // Payload used by the authenticated frontend and API routes.
         process.env.JWT_SECRET, { expiresIn: '1h' });
 
     // Respond with token
