@@ -91,7 +91,7 @@ router.post('/presence', authenticate, async (req, res) => {
 // ADD NEW MEMBER
 router.post('/', authenticate, requireMaster, upload.single('photo'), async (req, res) => {
   try {
-    const { name, age, gender, email, password, bio, occupation, hobbies } = req.body;
+    const { name, age, gender, email, password, bio, occupation, hobbies, links } = req.body;
     if (!name || age === undefined || !gender || !email || !password) {
       return res.status(400).json({
         error: 'Missing required fields: name, age, gender, email, password',
@@ -100,6 +100,7 @@ router.post('/', authenticate, requireMaster, upload.single('photo'), async (req
 
     const hashedPassword = await bcrypt.hash(password, 16);
     const parsedHobbies = typeof hobbies === 'string' ? JSON.parse(hobbies) : hobbies;
+    const parsedLinks = typeof links === 'string' ? JSON.parse(links) : links;
     const profileImage = req.file
       ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
       : undefined;
@@ -113,6 +114,7 @@ router.post('/', authenticate, requireMaster, upload.single('photo'), async (req
       bio: typeof bio === 'string' ? bio.trim() : '',
       occupation: typeof occupation === 'string' ? occupation.trim() : '',
       hobbies: parsedHobbies,
+      links: parsedLinks,
       ...(profileImage ? { profileImage } : {}),
       role: 'member',
     });
