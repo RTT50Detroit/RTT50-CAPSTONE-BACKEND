@@ -14,16 +14,16 @@ router.get('/', authenticate, async (req, res) => {
       Registration.find().select('-password -role').sort({ createdAt: -1 }).lean(),
       AboutMe.find().lean(),
     ]);
-    const bioByUserId = new Map(
+    const aboutMeByUserId = new Map(
         aboutMeEntries.map((entry) => [String(entry.userId), entry.content || ''])
     );
 
     const profiles = members.map((member) => ({
       id: member._id,
       name: member.name,
-      bio: bioByUserId.has(String(member._id))
-        ? bioByUserId.get(String(member._id))
-        : member.bio || '',
+      aboutMe: aboutMeByUserId.has(String(member._id))
+        ? aboutMeByUserId.get(String(member._id))
+        : member.aboutMe || '',
       photo: member.photo || member.profileImage,
       profileImage: member.profileImage,
       age: member.age,
@@ -36,22 +36,22 @@ router.get('/', authenticate, async (req, res) => {
 
     return res.status(200).json({ success: true, profiles });
   } catch (error) {
-    console.error('Error fetching AboutMe profiles:', error);
-    return res.status(500).json({ message: 'Failed to fetch AboutMe profiles.' });
+    console.error('Error fetching about-me profiles:', error);
+    return res.status(500).json({ message: 'Failed to fetch about-me profiles.' });
   }
 });
 
 
 // Update the signed-in member's profile details.
 router.patch('/', authenticate, async (req, res) => {
-  const { bio, occupation, hobbies, links } = req.body;
+  const { aboutMe, occupation, hobbies, links } = req.body;
   const updates = {};
 
-  if (bio !== undefined) {
-    if (typeof bio !== 'string') {
-      return res.status(400).json({ message: 'Bio must be a string.' });
+  if (aboutMe !== undefined) {
+    if (typeof aboutMe !== 'string') {
+      return res.status(400).json({ message: 'About me must be a string.' });
     }
-    updates.bio = bio.trim();
+    updates.aboutMe = aboutMe.trim();
   }
   if (occupation !== undefined) {
     if (typeof occupation !== 'string') {
@@ -91,10 +91,10 @@ router.patch('/', authenticate, async (req, res) => {
   }
 
   try {
-    if (updates.bio !== undefined) {
+    if (updates.aboutMe !== undefined) {
       await AboutMe.findOneAndUpdate(
           { userId: req.user.id },
-          { userId: req.user.id, content: updates.bio },
+          { userId: req.user.id, content: updates.aboutMe },
           { new: true, upsert: true, runValidators: true }
       );
     }

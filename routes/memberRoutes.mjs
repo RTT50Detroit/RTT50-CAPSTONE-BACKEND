@@ -91,7 +91,7 @@ router.post('/presence', authenticate, async (req, res) => {
 // ADD NEW MEMBER
 router.post('/', authenticate, requireMaster, upload.single('photo'), async (req, res) => {
   try {
-    const { name, age, gender, email, password, bio, occupation, hobbies, links } = req.body;
+    const { name, age, gender, email, password, aboutMe, occupation, hobbies, links } = req.body;
     if (!name || age === undefined || !gender || !email || !password) {
       return res.status(400).json({
         error: 'Missing required fields: name, age, gender, email, password',
@@ -111,7 +111,7 @@ router.post('/', authenticate, requireMaster, upload.single('photo'), async (req
       gender,
       email,
       password: hashedPassword,
-      bio: typeof bio === 'string' ? bio.trim() : '',
+      aboutMe: typeof aboutMe === 'string' ? aboutMe.trim() : '',
       occupation: typeof occupation === 'string' ? occupation.trim() : '',
       hobbies: parsedHobbies,
       links: parsedLinks,
@@ -172,11 +172,11 @@ router.put('/:id', authenticate, requireMaster, validate_route_param_id,
         `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     }
 
-    if (typeof updates.bio === 'string') {
-      updates.bio = updates.bio.trim();
+    if (typeof updates.aboutMe === 'string') {
+      updates.aboutMe = updates.aboutMe.trim();
       await AboutMe.findOneAndUpdate(
           { userId: req.params.id },
-          { userId: req.params.id, content: updates.bio },
+          { userId: req.params.id, content: updates.aboutMe },
           { upsert: true, runValidators: true },
       );
     }

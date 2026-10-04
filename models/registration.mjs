@@ -24,7 +24,7 @@ const registrationSchema = new mongoose.Schema({
         default: false,
       }, lastSeen: {
         type: Date,
-      }, bio: {
+      }, aboutMe: {
         type: String,
         default: '',
         maxlength: 2000,

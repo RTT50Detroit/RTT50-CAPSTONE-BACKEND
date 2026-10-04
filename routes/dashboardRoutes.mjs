@@ -5,9 +5,9 @@ const router = express.Router();
 
 // Mock profile data to return for the dashboard (replace with DB queries if needed)
 const profiles = [
-  { id: 1, name: "John Doe", bio: "Avid traveler and explorer." },
-  { id: 2, name: "Jane Smith", bio: "Technology enthusiast and coffee lover." },
-  { id: 3, name: "Alice Brown", bio: "Food blogger and photographer." }
+  { id: 1, name: "John Doe", aboutMe: "Avid traveler and explorer." },
+  { id: 2, name: "Jane Smith", aboutMe: "Technology enthusiast and coffee lover." },
+  { id: 3, name: "Alice Brown", aboutMe: "Food blogger and photographer." }
 ];
 
 router.get('/', authenticate, (req, res) => {
