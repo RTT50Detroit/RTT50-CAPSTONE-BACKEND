@@ -140,6 +140,7 @@ Below are the available routes implemented in the backend:
 | `/api/members/presence` | `POST` | Yes | Refresh the authenticated member's online presence. |
 | `/api/members` | `POST` | Master | Create a member record with required profile fields. |
 | `/api/members/:id` | `PUT` | Master | Update a specific member record by ID. |
+| `/api/members/:id/password` | `PUT` | Master | Reset a member password. |
 | `/api/members/:id` | `DELETE` | No | Delete a member record by ID. |
 | `/api/members/filter` | `GET` | No | Return members matching name, gender, or age-range filters. |
 | `/api/members/notes` | `GET` | Yes | Return all notes for the authenticated user, newest first. |

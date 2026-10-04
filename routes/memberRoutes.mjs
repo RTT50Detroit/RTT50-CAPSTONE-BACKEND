@@ -121,6 +121,32 @@ router.post('/', authenticate, requireMaster, async (req, res) => {
 });
 
 // UPDATE MEMBER BY ID
+router.put('/:id/password', authenticate, requireMaster, validate_route_param_id, async (req, res) => {
+  const { password } = req.body;
+
+  if (typeof password !== 'string' || password.trim().length < 8) {
+    return res.status(400).json({
+      error: 'Password must be at least 8 characters long.',
+    });
+  }
+
+  try {
+    const updatedUser = await Member.findByIdAndUpdate(
+        req.params.id,
+        { password: await bcrypt.hash(password.trim(), 16) },
+        { new: true, runValidators: true, select: '_id email' },
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+
+    return res.status(200).json({ message: 'Password reset successfully.' });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 router.put('/:id', authenticate, requireMaster, validate_route_param_id, async (req, res) => {
   try {
     const updates = { ...req.body };
