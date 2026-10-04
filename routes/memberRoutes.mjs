@@ -7,6 +7,7 @@ import { withPresenceStatus } from '../utils/memberPresence.mjs';
 import { requireMaster } from '../middleware/authentication.mjs';
 import bcrypt from 'bcrypt';
 import AboutMe from '../models/about.mjs';
+import upload from '../config/multer.mjs';
 
 const router = express.Router();
 
@@ -147,11 +148,20 @@ router.put('/:id/password', authenticate, requireMaster, validate_route_param_id
   }
 });
 
-router.put('/:id', authenticate, requireMaster, validate_route_param_id, async (req, res) => {
+router.put('/:id', authenticate, requireMaster, validate_route_param_id,
+    upload.single('photo'), async (req, res) => {
   try {
     const updates = { ...req.body };
     delete updates.role;
     delete updates.password;
+
+    if (typeof updates.hobbies === 'string') {
+      updates.hobbies = JSON.parse(updates.hobbies);
+    }
+    if (req.file) {
+      updates.profileImage =
+        `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    }
 
     if (typeof updates.bio === 'string') {
       updates.bio = updates.bio.trim();
