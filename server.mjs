@@ -5,6 +5,7 @@ import {logger} from './middleware/logger.mjs';
 
 import cors from 'cors';
 import Registration from './models/registration.mjs';
+import ensureMasterUser from './utils/ensureMasterUser.mjs';
 
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
 
@@ -20,7 +21,8 @@ if (!process.env.JWT_SECRET) {
 
 const app = express();
 const port = process.env.PORT || 5000;
-conn();
+await conn();
+await ensureMasterUser();
 
 app.use(cors({
   origin: function (origin, callback) {

@@ -99,8 +99,10 @@ Ensure you have the following installed in your environment:
    npm run start
    ```
 
-To create or promote the master account, set `MASTER_EMAIL` and
-`MASTER_PASSWORD` in the environment and run:
+The server automatically creates or promotes the master account on startup
+when `MASTER_EMAIL` and `MASTER_PASSWORD` are configured. This is useful on
+hosting plans without shell access. To create or promote it manually in a
+local environment, run:
 ```bash
 npm run create-master
 ```
