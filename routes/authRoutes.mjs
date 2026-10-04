@@ -179,6 +179,10 @@ const enabledProvider = (provider) => Boolean(
         providers[provider]?.clientSecret()));
 
 const randomUrlSafe = () => crypto.randomBytes(32).toString('base64url');
+const signOAuthState = (state, verifier, provider) => crypto
+    .createHmac('sha256', process.env.JWT_SECRET)
+    .update(`${state}.${verifier}.${provider}`)
+    .digest('base64url');
 
 router.get('/providers', (req, res) => {
   res.json({
@@ -196,7 +200,12 @@ router.get('/:provider', (req, res) => {
   const state = randomUrlSafe();
   const verifier = randomUrlSafe();
   const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
-  setCookie(res, stateCookie, JSON.stringify({ state, verifier, provider }), stateMaxAge);
+  setCookie(res, stateCookie, JSON.stringify({
+    state,
+    verifier,
+    provider,
+    signature: signOAuthState(state, verifier, provider),
+  }), stateMaxAge);
 
   const params = new URLSearchParams({
     client_id: config.clientId(),
@@ -220,7 +229,15 @@ router.get('/:provider/callback', async (req, res) => {
       throw new Error('OAuth authorization was not completed.');
     }
     const stateData = JSON.parse(saved);
-    if (stateData.provider !== provider || stateData.state !== req.query.state) {
+    const expectedSignature = signOAuthState(
+        stateData.state, stateData.verifier, stateData.provider);
+    const validSignature = stateData.signature &&
+      crypto.timingSafeEqual(
+          Buffer.from(stateData.signature),
+          Buffer.from(expectedSignature),
+      );
+    if (!validSignature || stateData.provider !== provider ||
+        stateData.state !== req.query.state || !req.query.code) {
       throw new Error('OAuth state validation failed.');
     }
 
