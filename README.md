@@ -121,14 +121,6 @@ BACKEND_URL=https://socialmatchbackend.onrender.com
 GOOGLE_CLIENT_ID=<google_client_id>
 GOOGLE_CLIENT_SECRET=<google_client_secret>
 GOOGLE_CALLBACK_URL=https://socialmatchbackend.onrender.com/api/auth/google/callback
-FACEBOOK_CLIENT_ID=<facebook_app_id>
-FACEBOOK_CLIENT_SECRET=<facebook_app_secret>
-FACEBOOK_CALLBACK_URL=https://socialmatchbackend.onrender.com/api/auth/facebook/callback
-APPLE_CLIENT_ID=<apple_services_id>
-APPLE_TEAM_ID=<apple_team_id>
-APPLE_KEY_ID=<apple_key_id>
-APPLE_PRIVATE_KEY=<apple_private_key_with_escaped_newlines>
-APPLE_CALLBACK_URL=https://socialmatchbackend.onrender.com/api/auth/apple/callback
 GITHUB_CLIENT_ID=<github_client_id>
 GITHUB_CLIENT_SECRET=<github_client_secret>
 GITHUB_CALLBACK_URL=https://socialmatchbackend.onrender.com/api/auth/github/callback
@@ -137,9 +129,9 @@ MASTER_PASSWORD=<master_account_password>
 ```
 Replace `<mongo_connection_uri>` and other placeholders with your actual configuration details.
 
-Social sign-in providers are optional. Only providers with complete credentials
-are shown on the frontend. Register the callback URLs exactly as listed above
-with each provider. Keep all client secrets, the Apple private key, and
+Google and GitHub are the supported social sign-in providers. Both are optional;
+only providers with complete credentials are shown on the frontend. Register
+the callback URLs exactly as listed above. Keep all client secrets and
 `JWT_SECRET` in the hosting provider's secret environment settings; never put
 them in frontend variables or commit them to the repository.
 

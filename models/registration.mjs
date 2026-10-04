@@ -17,7 +17,7 @@ const registrationSchema = new mongoose.Schema({
         default: 'member',
       }, oauthAccounts: {
         type: [{
-          provider: { type: String, enum: ['google', 'facebook', 'apple', 'github'] },
+          provider: { type: String, enum: ['google', 'github'] },
           subject: { type: String },
           email: { type: String },
         }],

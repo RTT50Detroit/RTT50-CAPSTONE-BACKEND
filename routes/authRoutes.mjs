@@ -2,7 +2,6 @@ import express from 'express';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { createRemoteJWKSet, jwtVerify, SignJWT } from 'jose';
 import Registration from '../models/registration.mjs';
 
 const router = express.Router();
@@ -29,25 +28,6 @@ const providers = {
         subject: profile.sub,
         email: profile.email,
         emailVerified: profile.email_verified === true,
-        name: profile.name,
-      };
-    },
-  },
-  facebook: {
-    authorize: 'https://www.facebook.com/v20.0/dialog/oauth',
-    token: 'https://graph.facebook.com/v20.0/oauth/access_token',
-    scope: 'email,public_profile',
-    clientId: () => process.env.FACEBOOK_CLIENT_ID,
-    clientSecret: () => process.env.FACEBOOK_CLIENT_SECRET,
-    profile: async (tokens) => {
-      const response = await fetch(
-          `https://graph.facebook.com/me?fields=id,name,email&access_token=${encodeURIComponent(tokens.access_token)}`);
-      if (!response.ok) throw new Error('Facebook profile request failed.');
-      const profile = await response.json();
-      return {
-        subject: profile.id,
-        email: profile.email,
-        emailVerified: Boolean(profile.email),
         name: profile.name,
       };
     },
@@ -80,56 +60,12 @@ const providers = {
       };
     },
   },
-  apple: {
-    authorize: 'https://appleid.apple.com/auth/authorize',
-    token: 'https://appleid.apple.com/auth/token',
-    scope: 'name email',
-    clientId: () => process.env.APPLE_CLIENT_ID,
-    clientSecret: () => process.env.APPLE_PRIVATE_KEY,
-    profile: async (tokens) => {
-      const issuer = 'https://appleid.apple.com';
-      const keySet = createRemoteJWKSet(new URL(`${issuer}/auth/keys`));
-      const { payload } = await jwtVerify(tokens.id_token, keySet, {
-        issuer,
-        audience: process.env.APPLE_CLIENT_ID,
-      });
-      return {
-        subject: payload.sub,
-        email: payload.email,
-        emailVerified: payload.email_verified === true || payload.email_verified === 'true',
-        name: payload.email?.split('@')[0],
-      };
-    },
-  },
 };
 
 const getCallbackUrl = (provider) => (
   process.env[`${provider.toUpperCase()}_CALLBACK_URL`] ||
   `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/${provider}/callback`
 );
-
-const createAppleClientSecret = async () => {
-  const privateKey = process.env.APPLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-  if (!privateKey || !process.env.APPLE_TEAM_ID || !process.env.APPLE_KEY_ID) {
-    throw new Error('Apple OAuth credentials are incomplete.');
-  }
-  return new SignJWT({})
-      .setProtectedHeader({ alg: 'ES256', kid: process.env.APPLE_KEY_ID })
-      .setIssuer(process.env.APPLE_TEAM_ID)
-      .setSubject(process.env.APPLE_CLIENT_ID)
-      .setAudience('https://appleid.apple.com')
-      .setIssuedAt()
-      .setExpirationTime('5m')
-      .sign(await crypto.subtle.importKey(
-          'pkcs8',
-          Buffer.from(privateKey.replace(
-              '-----BEGIN PRIVATE KEY-----', '').replace('-----END PRIVATE KEY-----', '')
-                  .replace(/\s/g, ''), 'base64'),
-          { name: 'ECDSA', namedCurve: 'P-256' },
-          false,
-          ['sign'],
-      ));
-};
 
 const parseCookies = (header = '') => Object.fromEntries(
     header.split(';').map((part) => {
@@ -172,11 +108,7 @@ const issueSession = (res, member) => {
 };
 
 const enabledProvider = (provider) => Boolean(
-    providers[provider]?.clientId() &&
-    (provider !== 'apple'
-      ? providers[provider]?.clientSecret()
-      : process.env.APPLE_TEAM_ID && process.env.APPLE_KEY_ID &&
-        providers[provider]?.clientSecret()));
+    providers[provider]?.clientId() && providers[provider]?.clientSecret());
 
 const randomUrlSafe = () => crypto.randomBytes(32).toString('base64url');
 const signOAuthState = (state, verifier, provider) => crypto
@@ -241,12 +173,9 @@ router.get('/:provider/callback', async (req, res) => {
       throw new Error('OAuth state validation failed.');
     }
 
-    const clientSecret = provider === 'apple'
-      ? await createAppleClientSecret()
-      : config.clientSecret();
     const tokenParams = new URLSearchParams({
       client_id: config.clientId(),
-      client_secret: clientSecret,
+      client_secret: config.clientSecret(),
       code: req.query.code,
       redirect_uri: getCallbackUrl(provider),
       grant_type: 'authorization_code',
