@@ -44,9 +44,22 @@ router.get('/', authenticate, async (req, res) => {
 
 // Update the signed-in member's profile details.
 router.patch('/', authenticate, async (req, res) => {
-  const { aboutMe, occupation, hobbies, links } = req.body;
+  const { age, gender, aboutMe, occupation, hobbies, links } = req.body;
   const updates = {};
 
+  if (age !== undefined) {
+    const parsedAge = Number(age);
+    if (!Number.isInteger(parsedAge) || parsedAge < 18 || parsedAge > 120) {
+      return res.status(400).json({ message: 'Age must be a whole number between 18 and 120.' });
+    }
+    updates.age = parsedAge;
+  }
+  if (gender !== undefined) {
+    if (typeof gender !== 'string' || !gender.trim()) {
+      return res.status(400).json({ message: 'Gender is required.' });
+    }
+    updates.gender = gender.trim();
+  }
   if (aboutMe !== undefined) {
     if (typeof aboutMe !== 'string') {
       return res.status(400).json({ message: 'About me must be a string.' });
