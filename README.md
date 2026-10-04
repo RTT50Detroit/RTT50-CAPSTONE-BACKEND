@@ -99,6 +99,12 @@ Ensure you have the following installed in your environment:
    npm run start
    ```
 
+To create or promote the master account, set `MASTER_EMAIL` and
+`MASTER_PASSWORD` in the environment and run:
+```bash
+npm run create-master
+```
+
 ### Environment Variables
 
 This project supports multiple environment configurations. Create `.env.development` or `.env.production` files depending on your environment. Add the following variables:
@@ -108,6 +114,8 @@ PORT=<server_port>             # Port number (default: 5000)
 MONGO_URI=<mongo_connection_uri>
 JWT_SECRET=<secret_for_tokens>
 ALLOWED_ORIGINS=<comma_separated_allowed_origins>
+MASTER_EMAIL=<master_account_email>
+MASTER_PASSWORD=<master_account_password>
 ```
 Replace `<mongo_connection_uri>` and other placeholders with your actual configuration details.
 
@@ -128,8 +136,8 @@ Below are the available routes implemented in the backend:
 | `/api/members` | `GET` | No | Fetch all members or filter by query parameters such as name, age, and gender. |
 | `/api/members/:id` | `GET` | No | Retrieve a single member by ID. |
 | `/api/members/presence` | `POST` | Yes | Refresh the authenticated member's online presence. |
-| `/api/members` | `POST` | No | Create a member record with required profile fields. |
-| `/api/members/:id` | `PUT` | No | Update a specific member record by ID. |
+| `/api/members` | `POST` | Master | Create a member record with required profile fields. |
+| `/api/members/:id` | `PUT` | Master | Update a specific member record by ID. |
 | `/api/members/:id` | `DELETE` | No | Delete a member record by ID. |
 | `/api/members/filter` | `GET` | No | Return members matching name, gender, or age-range filters. |
 | `/api/members/notes` | `GET` | Yes | Return all notes for the authenticated user, newest first. |

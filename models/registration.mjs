@@ -11,6 +11,10 @@ const registrationSchema = new mongoose.Schema({
         type: String, required: true, unique: true,
       }, password: {
         type: String, required: true,
+      }, role: {
+        type: String,
+        enum: ['member', 'master'],
+        default: 'member',
       }, photo: {
         type: String,
       }, profileImage: {
@@ -20,6 +24,10 @@ const registrationSchema = new mongoose.Schema({
         default: false,
       }, lastSeen: {
         type: Date,
+      }, bio: {
+        type: String,
+        default: '',
+        maxlength: 2000,
       },
     },
     {timestamps: true},

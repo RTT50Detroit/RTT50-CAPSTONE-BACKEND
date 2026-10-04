@@ -11,7 +11,7 @@ dotenv.config();
 router.get('/', authenticate, async (req, res) => {
   try {
     const [members, aboutMeEntries] = await Promise.all([
-      Registration.find().sort({ createdAt: -1 }).lean(),
+      Registration.find().select('-password -role').sort({ createdAt: -1 }).lean(),
       AboutMe.find().lean(),
     ]);
     const bioByUserId = new Map(
@@ -21,7 +21,9 @@ router.get('/', authenticate, async (req, res) => {
     const profiles = members.map((member) => ({
       id: member._id,
       name: member.name,
-      bio: bioByUserId.get(String(member._id)) || '',
+      bio: bioByUserId.has(String(member._id))
+        ? bioByUserId.get(String(member._id))
+        : member.bio || '',
       photo: member.photo || member.profileImage,
       age: member.age,
       gender: member.gender,
@@ -49,6 +51,11 @@ router.patch('/', authenticate, async (req, res) => {
         { userId: req.user.id },
         { userId: req.user.id, content: bio },
         { new: true, upsert: true, runValidators: true }
+    );
+    await Registration.findByIdAndUpdate(
+        req.user.id,
+        { bio },
+        { runValidators: true },
     );
 
     return res.send({

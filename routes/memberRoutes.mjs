@@ -4,6 +4,9 @@ import { logger } from '../middleware/logger.mjs';
 import authenticate from '../middleware/authentication.mjs';
 import { validate_route_param_id } from '../middleware/validate_request.mjs';
 import { withPresenceStatus } from '../utils/memberPresence.mjs';
+import { requireMaster } from '../middleware/authentication.mjs';
+import bcrypt from 'bcrypt';
+import AboutMe from '../models/about.mjs';
 
 const router = express.Router();
 
@@ -85,30 +88,70 @@ router.post('/presence', authenticate, async (req, res) => {
 });
 
 // ADD NEW MEMBER
-router.post('/', async (req, res) => {
+router.post('/', authenticate, requireMaster, async (req, res) => {
   try {
-    if (!req.body.name || !req.body.age || !req.body.gender) {
-      return res.status(400).json({ error: 'Missing required fields: name, age, gender' });
+    const { name, age, gender, email, password, bio } = req.body;
+    if (!name || age === undefined || !gender || !email || !password) {
+      return res.status(400).json({
+        error: 'Missing required fields: name, age, gender, email, password',
+      });
     }
 
-    const create = await Member.create(req.body);
+    const hashedPassword = await bcrypt.hash(password, 16);
+    const create = await Member.create({
+      ...req.body,
+      name,
+      age: Number(age),
+      gender,
+      email,
+      password: hashedPassword,
+      bio: typeof bio === 'string' ? bio.trim() : '',
+      role: 'member',
+    });
     logger.info('New member created:', create);
-    return res.status(201).json({ message: 'Member added successfully!', member: create });
+    const safeMember = create.toObject();
+    delete safeMember.password;
+    return res.status(201).json({ message: 'Member added successfully!', member: safeMember });
   } catch (e) {
+    if (e.code === 11000) {
+      return res.status(409).json({ error: 'A member with that email already exists.' });
+    }
     res.status(500).json({ error: e.message });
   }
 });
 
 // UPDATE MEMBER BY ID
-router.put('/:id', validate_route_param_id, async (req, res) => {
+router.put('/:id', authenticate, requireMaster, validate_route_param_id, async (req, res) => {
   try {
-    const update = await Member.findByIdAndUpdate(req.params.id, req.body, { new: true }); // 'new: true' returns the updated document
+    const updates = { ...req.body };
+    delete updates.role;
+    delete updates.password;
+
+    if (typeof updates.bio === 'string') {
+      updates.bio = updates.bio.trim();
+      await AboutMe.findOneAndUpdate(
+          { userId: req.params.id },
+          { userId: req.params.id, content: updates.bio },
+          { upsert: true, runValidators: true },
+      );
+    }
+
+    const update = await Member.findByIdAndUpdate(
+        req.params.id,
+        updates,
+        { new: true, runValidators: true },
+    );
     if (!update) {
       return res.status(404).json({ error: 'Member not found' });
     }
+    const safeMember = update.toObject();
+    delete safeMember.password;
     logger.info(`Member with ID ${req.params.id} updated.`);
-    return res.status(200).json({ message: 'Member updated successfully!', member: update });
+    return res.status(200).json({ message: 'Member updated successfully!', member: safeMember });
   } catch (e) {
+    if (e.code === 11000) {
+      return res.status(409).json({ error: 'A member with that email already exists.' });
+    }
     res.status(500).json({ error: e.message });
   }
 });
