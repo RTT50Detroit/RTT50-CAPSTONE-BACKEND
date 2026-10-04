@@ -1,4 +1,5 @@
 import multer from "multer";
+import path from "path";
 const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
   if (ext === ".jpg" || ext === ".png" || ext === ".jpeg") {
