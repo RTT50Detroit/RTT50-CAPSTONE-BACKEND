@@ -5,6 +5,18 @@ import Registration from '../models/registration.mjs';
 import authenticate from '../middleware/authentication.mjs';
 
 const router = express.Router();
+const isProduction = process.env.NODE_ENV === 'production';
+
+const setSessionCookie = (res, token) => {
+  res.append('Set-Cookie', [
+    `sm_session=${encodeURIComponent(token)}`,
+    'Path=/',
+    'Max-Age=3600',
+    'HttpOnly',
+    'SameSite=Lax',
+    ...(isProduction ? ['Secure'] : []),
+  ].join('; '));
+};
 
 router.post(['/', '/login'], async (req, res) => {
   const { email, password } = req.body;
@@ -44,6 +56,7 @@ router.post(['/', '/login'], async (req, res) => {
         },
         // Payload used by the authenticated frontend and API routes.
         process.env.JWT_SECRET, { expiresIn: '1h' });
+    setSessionCookie(res, token);
 
     // Respond with token
     res.json({ token });

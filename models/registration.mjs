@@ -10,11 +10,21 @@ const registrationSchema = new mongoose.Schema({
       }, email: {
         type: String, required: true, unique: true,
       }, password: {
-        type: String, required: true,
+        type: String,
       }, role: {
         type: String,
         enum: ['member', 'master'],
         default: 'member',
+      }, oauthAccounts: {
+        type: [{
+          provider: { type: String, enum: ['google', 'facebook', 'apple', 'github'] },
+          subject: { type: String },
+          email: { type: String },
+        }],
+        default: [],
+      }, emailVerified: {
+        type: Boolean,
+        default: false,
       }, photo: {
         type: String,
       }, profileImage: {

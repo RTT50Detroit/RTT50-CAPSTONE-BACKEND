@@ -116,10 +116,32 @@ PORT=<server_port>             # Port number (default: 5000)
 MONGO_URI=<mongo_connection_uri>
 JWT_SECRET=<secret_for_tokens>
 ALLOWED_ORIGINS=<comma_separated_allowed_origins>
+FRONTEND_URL=https://socialmatchapp.onrender.com
+BACKEND_URL=https://socialmatchbackend.onrender.com
+GOOGLE_CLIENT_ID=<google_client_id>
+GOOGLE_CLIENT_SECRET=<google_client_secret>
+GOOGLE_CALLBACK_URL=https://socialmatchbackend.onrender.com/api/auth/google/callback
+FACEBOOK_CLIENT_ID=<facebook_app_id>
+FACEBOOK_CLIENT_SECRET=<facebook_app_secret>
+FACEBOOK_CALLBACK_URL=https://socialmatchbackend.onrender.com/api/auth/facebook/callback
+APPLE_CLIENT_ID=<apple_services_id>
+APPLE_TEAM_ID=<apple_team_id>
+APPLE_KEY_ID=<apple_key_id>
+APPLE_PRIVATE_KEY=<apple_private_key_with_escaped_newlines>
+APPLE_CALLBACK_URL=https://socialmatchbackend.onrender.com/api/auth/apple/callback
+GITHUB_CLIENT_ID=<github_client_id>
+GITHUB_CLIENT_SECRET=<github_client_secret>
+GITHUB_CALLBACK_URL=https://socialmatchbackend.onrender.com/api/auth/github/callback
 MASTER_EMAIL=<master_account_email>
 MASTER_PASSWORD=<master_account_password>
 ```
 Replace `<mongo_connection_uri>` and other placeholders with your actual configuration details.
+
+Social sign-in providers are optional. Only providers with complete credentials
+are shown on the frontend. Register the callback URLs exactly as listed above
+with each provider. Keep all client secrets, the Apple private key, and
+`JWT_SECRET` in the hosting provider's secret environment settings; never put
+them in frontend variables or commit them to the repository.
 
 ---
 
@@ -133,6 +155,10 @@ Below are the available routes implemented in the backend:
 |----------|--------|------|-------------|
 | `/api/register` | `POST` | No | Register a new member and hash the password before saving it. |
 | `/api/login` | `POST` | No | Verify email/password and return a JWT token for authenticated routes. |
+| `/api/auth/:provider` | `GET` | No | Start a secure OAuth authorization-code flow for a configured provider. |
+| `/api/auth/:provider/callback` | `GET` | No | Validate the OAuth callback and issue an HttpOnly application session cookie. |
+| `/api/auth/session/current` | `GET` | No | Return the current cookie session identity. |
+| `/api/auth/session/logout` | `POST` | No | Clear the application session cookie. |
 | `/api/login/logout` | `POST` | Yes | Mark the authenticated member offline. |
 | `/api/dashboard` | `GET` | Yes | Return dashboard data for the authenticated user. |
 | `/api/members` | `GET` | No | Fetch all members or filter by query parameters such as name, age, and gender. |

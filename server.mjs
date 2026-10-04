@@ -31,22 +31,18 @@ await ensureMasterUser();
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || process.env.NODE_ENV === 'production') {
-      callback(null, true); // Allow all origins in production or if origin is not present
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'https://socialmatchmaker.netlify.app',
+      'https://socialmatchapp.onrender.com',
+      ...(process.env.ALLOWED_ORIGINS
+          ? process.env.ALLOWED_ORIGINS.split(',').map((value) => value.trim())
+          : []),
+    ];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
     } else {
-      const allowedOrigins = [
-        'http://localhost:5173',
-        'https://socialmatchmaker.netlify.app',
-        'https://socialmatchapp.onrender.com',
-        ...(process.env.ALLOWED_ORIGINS
-            ? process.env.ALLOWED_ORIGINS.split(',')
-            : []),
-      ];
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
+      callback(new Error('Not allowed by CORS'));
     }
   },
   methods: ['GET', 'PUT', 'PATCH', 'POST', 'DELETE'],
@@ -57,6 +53,8 @@ app.use(express.json());
 const MemberRoutes = await import('./routes/memberRoutes.mjs').then(
     module => module.default);
 const LoginRoutes = await import('./routes/loginRoutes.mjs').then(
+    module => module.default);
+const AuthRoutes = await import('./routes/authRoutes.mjs').then(
     module => module.default);
 const RegistrationRoutes = await import('./routes/registrationRoutes.mjs').then(
     module => module.default);
@@ -72,6 +70,7 @@ const ProfileImageRoutes = await import('./routes/profileImageRoutes.mjs').then(
 // Route Definitions
 app.use('/api/register', RegistrationRoutes);
 app.use('/api/login', LoginRoutes);
+app.use('/api/auth', AuthRoutes);
 app.use('/api/dashboard', DashboardRoutes);
 app.use('/api/members/notes', NoteRoutes);
 app.use('/api/members/aboutme', AboutMeRoutes);
