@@ -3,6 +3,7 @@ import Registration from '../models/registration.mjs';
 import bcrypt from 'bcrypt';
 import upload from '../config/multer.mjs';
 import { withPresenceStatus } from '../utils/memberPresence.mjs';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
@@ -58,12 +59,23 @@ router.post('/', upload.single('photo'), async (req, res) => {
 
     // Check if a photo is uploaded
     const profileImage = req.file
-                         ? `/uploads/${req.file.filename}` // Use uploaded file path
+                         ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
                          : getDefaultProfileImage(req.body.gender); // Use a gender-matched default image
 
     const create = await Registration.create({ ...req.body, password: hashedPassword, profileImage, });
-    console.log('Registration created:', create);
-    res.json(create);
+    const token = jwt.sign(
+        {
+          id: create._id,
+          name: create.name,
+          email: create.email,
+          role: create.role || 'member',
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' },
+    );
+    const safeUser = create.toObject();
+    delete safeUser.password;
+    res.status(201).json({ message: 'Registration successful!', token, profile: safeUser });
   }
   catch (e) {
     res.status(500).json({error: e.message});
@@ -77,7 +89,8 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
 
     // If a new file is uploaded, include the `profileImage` in updates
     if (req.file) {
-      updates.profileImage = `/uploads/${req.file.filename}`;
+      updates.profileImage =
+        `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     }
 
     const updatedUser = await Registration.findByIdAndUpdate(req.params.id, updates, { new: true });

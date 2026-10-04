@@ -28,6 +28,27 @@ const registrationSchema = new mongoose.Schema({
         type: String,
         default: '',
         maxlength: 2000,
+      }, occupation: {
+        type: String,
+        default: '',
+        maxlength: 120,
+      }, hobbies: {
+        type: [String],
+        default: [],
+        validate: {
+          validator: (hobbies) => hobbies.length <= 20,
+          message: 'A profile can have up to 20 hobbies.',
+        },
+      }, links: {
+        type: [{
+          label: { type: String, required: true, maxlength: 50 },
+          url: { type: String, required: true, maxlength: 500 },
+        }],
+        default: [],
+        validate: {
+          validator: (links) => links.length <= 10,
+          message: 'A profile can have up to 10 links.',
+        },
       },
     },
     {timestamps: true},

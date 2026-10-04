@@ -25,8 +25,12 @@ router.get('/', authenticate, async (req, res) => {
         ? bioByUserId.get(String(member._id))
         : member.bio || '',
       photo: member.photo || member.profileImage,
+      profileImage: member.profileImage,
       age: member.age,
       gender: member.gender,
+      occupation: member.occupation || '',
+      hobbies: member.hobbies || [],
+      links: member.links || [],
       createdAt: member.createdAt,
     }));
 
@@ -38,33 +42,79 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 
-// Update Bio
+// Update the signed-in member's profile details.
 router.patch('/', authenticate, async (req, res) => {
-  const { bio } = req.body;
+  const { bio, occupation, hobbies, links } = req.body;
+  const updates = {};
 
-  if (typeof bio !== 'string') {
-    return res.status(400).json({ message: 'Bio is required.' });
+  if (bio !== undefined) {
+    if (typeof bio !== 'string') {
+      return res.status(400).json({ message: 'Bio must be a string.' });
+    }
+    updates.bio = bio.trim();
+  }
+  if (occupation !== undefined) {
+    if (typeof occupation !== 'string') {
+      return res.status(400).json({ message: 'Occupation must be a string.' });
+    }
+    updates.occupation = occupation.trim();
+  }
+  if (hobbies !== undefined) {
+    if (!Array.isArray(hobbies) ||
+        hobbies.some((hobby) => typeof hobby !== 'string')) {
+      return res.status(400).json({ message: 'Hobbies must be an array of strings.' });
+    }
+    updates.hobbies = [...new Set(hobbies.map((hobby) => hobby.trim()).filter(Boolean))];
+  }
+  if (links !== undefined) {
+    if (!Array.isArray(links) || links.some((link) => (
+      !link || typeof link.label !== 'string' || typeof link.url !== 'string'
+    ))) {
+      return res.status(400).json({ message: 'Links must include a label and URL.' });
+    }
+    updates.links = links
+        .map(({ label, url }) => ({ label: label.trim(), url: url.trim() }))
+        .filter(({ label, url }) => label && url);
+    if (updates.links.some(({ url }) => {
+      try {
+        return !['http:', 'https:'].includes(new URL(url).protocol);
+      } catch {
+        return true;
+      }
+    })) {
+      return res.status(400).json({ message: 'Links must use an HTTP or HTTPS URL.' });
+    }
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ message: 'At least one profile field is required.' });
   }
 
   try {
-    const aboutMe = await AboutMe.findOneAndUpdate(
-        { userId: req.user.id },
-        { userId: req.user.id, content: bio },
-        { new: true, upsert: true, runValidators: true }
-    );
-    await Registration.findByIdAndUpdate(
+    if (updates.bio !== undefined) {
+      await AboutMe.findOneAndUpdate(
+          { userId: req.user.id },
+          { userId: req.user.id, content: updates.bio },
+          { new: true, upsert: true, runValidators: true }
+      );
+    }
+    const updatedUser = await Registration.findByIdAndUpdate(
         req.user.id,
-        { bio },
-        { runValidators: true },
-    );
+        updates,
+        { new: true, runValidators: true },
+    ).select('-password -role');
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'Member not found.' });
+    }
 
     return res.send({
-      message: 'AboutMe updated successfully',
-      aboutMe,
+      message: 'Profile updated successfully.',
+      profile: updatedUser,
     });
   } catch (error) {
-    console.error('Error updating AboutMe:', error);
-    return res.status(500).json({ message: 'Failed to update AboutMe.' });
+    console.error('Error updating member profile:', error);
+    return res.status(500).json({ message: 'Failed to update profile.' });
   }
 });
 

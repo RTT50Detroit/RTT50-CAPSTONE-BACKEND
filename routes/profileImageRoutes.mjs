@@ -1,18 +1,19 @@
 import express from "express";
 import RegistrationModel from "../models/registration.mjs";
-import multer from 'multer';
-import path from 'path';
-import {fileURLToPath} from 'url';
 import authenticate from '../middleware/authentication.mjs';
+import multer from 'multer';
 
 const router = express.Router();
-
-// Get __dirname in ES module
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const upload = multer({
-    dest: path.join(__dirname, "uploads/"),
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, callback) => {
+        if (['image/jpeg', 'image/png'].includes(file.mimetype)) {
+            callback(null, true);
+            return;
+        }
+        callback(new Error('Only JPG and PNG images are allowed.'));
+    },
 });
 
 const getDefaultProfileImage = (gender) => {
@@ -55,7 +56,9 @@ router.get("/:id", async (req, res) => {
 
 router.post("/:id", authenticate, upload.single("profileImage"), async (req, res) => {
     const { id } = req.params;
-    if (String(req.user.id) !== String(id)) {
+    const authenticatedMemberId = req.user.id || req.user._id || req.user.userId ||
+        req.user.memberId || req.user.sub;
+    if (!authenticatedMemberId || String(authenticatedMemberId) !== String(id)) {
         return res.status(403).json({ message: "You can only update your own profile image." });
     }
 
@@ -63,12 +66,12 @@ router.post("/:id", authenticate, upload.single("profileImage"), async (req, res
         return res.status(400).json({ message: "A profile image is required." });
     }
 
-    const newImagePath = `/uploads/${req.file.filename}`;
+    const profileImage = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
     try {
         const member = await RegistrationModel.findByIdAndUpdate(
             id,
-            { profileImage: newImagePath },
+            { profileImage },
             { new: true }
         );
 
