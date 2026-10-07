@@ -8,7 +8,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon server.mjs",
-    "create-master": "node scripts/createMaster.mjs"
+    "create-master": "node scripts/createMaster.mjs",
+    "seed-feedback": "node scripts/seedFeedback.mjs"
   },
   "keywords": [],
   "author": "",

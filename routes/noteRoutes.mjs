@@ -3,6 +3,7 @@ import Note from '../models/note.mjs';
 import authenticate from '../middleware/authentication.mjs';
 
 const router = express.Router();
+const noteTypes = new Set(['note', 'journal']);
 
 router.get('/', authenticate, async (req, res) => {
   try {
@@ -14,10 +15,13 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 router.post('/', authenticate, async (req, res) => {
-  const { title, content } = req.body;
+  const { title, content, type = 'journal' } = req.body;
 
   if (!content?.trim()) {
     return res.status(400).json({ message: 'Content is required.' });
+  }
+  if (!noteTypes.has(type)) {
+    return res.status(400).json({ message: 'Type must be either note or journal.' });
   }
 
   try {
@@ -25,6 +29,7 @@ router.post('/', authenticate, async (req, res) => {
       user: req.user.id,
       title: title?.trim() || 'Untitled entry',
       content: content.trim(),
+      type,
     });
 
     res.status(201).json(note);
@@ -34,12 +39,19 @@ router.post('/', authenticate, async (req, res) => {
 });
 
 router.put('/:id', authenticate, async (req, res) => {
+  const { title, content, type } = req.body;
+
+  if (type !== undefined && !noteTypes.has(type)) {
+    return res.status(400).json({ message: 'Type must be either note or journal.' });
+  }
+
   try {
     const note = await Note.findOneAndUpdate(
         { _id: req.params.id, user: req.user.id },
         {
-          title: req.body.title?.trim() || 'Untitled entry',
-          content: req.body.content?.trim(),
+          title: title?.trim() || 'Untitled entry',
+          content: content?.trim(),
+          ...(type === undefined ? {} : { type }),
         },
         { new: true, runValidators: true }
     );

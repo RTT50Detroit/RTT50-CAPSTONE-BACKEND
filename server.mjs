@@ -62,6 +62,8 @@ const DashboardRoutes = await import('./routes/dashboardRoutes.mjs').then(
   module => module.default);
 const NoteRoutes = await import('./routes/noteRoutes.mjs').then(
     module => module.default);
+const FeedbackRoutes = await import('./routes/feedbackRoutes.mjs').then(
+    module => module.default);
 const AboutMeRoutes = await import('./routes/aboutMeRoutes.mjs').then(
     module => module.default);
 const ProfileImageRoutes = await import('./routes/profileImageRoutes.mjs').then(
@@ -73,6 +75,7 @@ app.use('/api/login', LoginRoutes);
 app.use('/api/auth', AuthRoutes);
 app.use('/api/dashboard', DashboardRoutes);
 app.use('/api/members/notes', NoteRoutes);
+app.use('/api/members/feedback', FeedbackRoutes);
 app.use('/api/members/aboutme', AboutMeRoutes);
 app.use('/api/members/profile-image', ProfileImageRoutes);
 app.use('/api/members', MemberRoutes);

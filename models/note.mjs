@@ -15,6 +15,12 @@ const noteSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  type: {
+    type: String,
+    enum: ['note', 'journal'],
+    default: 'journal',
+    required: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
