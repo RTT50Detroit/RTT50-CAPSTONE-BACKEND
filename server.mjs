@@ -8,6 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Registration from './models/registration.mjs';
 import ensureMasterUser from './utils/ensureMasterUser.mjs';
+import { startEligibilitySweep } from './utils/eligibility.mjs';
 
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
 
@@ -28,6 +29,7 @@ const publicDirectory = path.join(backendDirectory, 'public');
 const legacyUploadDirectory = path.join(backendDirectory, 'routes', 'uploads');
 await conn();
 await ensureMasterUser();
+startEligibilitySweep();
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -66,6 +68,8 @@ const FeedbackRoutes = await import('./routes/feedbackRoutes.mjs').then(
     module => module.default);
 const AboutMeRoutes = await import('./routes/aboutMeRoutes.mjs').then(
     module => module.default);
+const AgeVerificationRoutes = await import('./routes/ageVerificationRoutes.mjs').then(
+    module => module.default);
 const ProfileImageRoutes = await import('./routes/profileImageRoutes.mjs').then(
     module => module.default);
 
@@ -76,6 +80,7 @@ app.use('/api/auth', AuthRoutes);
 app.use('/api/dashboard', DashboardRoutes);
 app.use('/api/members/notes', NoteRoutes);
 app.use('/api/members/feedback', FeedbackRoutes);
+app.use('/api/members/age-verification', AgeVerificationRoutes);
 app.use('/api/members/aboutme', AboutMeRoutes);
 app.use('/api/members/profile-image', ProfileImageRoutes);
 app.use('/api/members', MemberRoutes);

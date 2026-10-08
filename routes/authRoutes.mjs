@@ -3,6 +3,8 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import Registration from '../models/registration.mjs';
+import AgeBlock, { hashIdentifier } from '../models/ageBlock.mjs';
+import { createSessionPayload } from '../utils/session.mjs';
 
 const router = express.Router();
 const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
@@ -96,12 +98,8 @@ const setCookie = (res, name, value, maxAge) => {
 
 const clearCookie = (res, name) => setCookie(res, name, '', 0);
 
-const createSessionToken = (member) => jwt.sign({
-  id: member._id,
-  name: member.name,
-  email: member.email,
-  role: member.role || 'member',
-}, process.env.JWT_SECRET, { expiresIn: '1h' });
+const createSessionToken = (member) => jwt.sign(
+    createSessionPayload(member), process.env.JWT_SECRET, { expiresIn: '1h' });
 
 const issueSession = (res, member) => {
   setCookie(res, cookieName, createSessionToken(member), 60 * 60 * 1000);
@@ -194,6 +192,20 @@ router.get('/:provider/callback', async (req, res) => {
       throw new Error('A verified email address is required for social sign-in.');
     }
 
+    const blocked = await AgeBlock.exists({
+      identifierHash: {
+        $in: [
+          hashIdentifier(profile.email),
+          hashIdentifier(`${provider}:${profile.subject}`),
+        ],
+      },
+    });
+    if (blocked) {
+      clearCookie(res, stateCookie);
+      return res.redirect(`${frontendUrl}/login?oauthError=${encodeURIComponent(
+          'This account is not eligible to join. You must be 21 or older.')}`);
+    }
+
     let member = await Registration.findOne({
       $or: [
         { email: profile.email.toLowerCase() },
@@ -206,8 +218,6 @@ router.get('/:provider/callback', async (req, res) => {
         email: profile.email.toLowerCase(),
         emailVerified: true,
         password: await bcrypt.hash(randomUrlSafe(), 12),
-        age: 18,
-        gender: 'prefer-not-to-say',
         oauthAccounts: [{ provider, subject: profile.subject, email: profile.email }],
       });
     } else if (!member.oauthAccounts.some((account) => (
@@ -238,7 +248,13 @@ router.get('/session/current', async (req, res) => {
   if (!token) return res.status(401).json({ message: 'No active session.' });
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    return res.json({ user: payload });
+    const member = await Registration.findById(payload.id)
+        .select('name email role ageVerified policyVersion').lean();
+    if (!member) {
+      clearCookie(res, cookieName);
+      return res.status(401).json({ message: 'Session expired.' });
+    }
+    return res.json({ user: { ...payload, ...createSessionPayload(member) } });
   } catch {
     clearCookie(res, cookieName);
     return res.status(401).json({ message: 'Session expired.' });

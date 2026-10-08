@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import { MINIMUM_AGE } from '../config/policy.mjs';
 import Registration from '../models/registration.mjs';
 
 const ensureMasterUser = async () => {
@@ -24,7 +25,7 @@ const ensureMasterUser = async () => {
         },
         $setOnInsert: {
           name: 'Master User',
-          age: 18,
+          age: MINIMUM_AGE,
           gender: 'other',
         },
       },

@@ -1,6 +1,7 @@
 import express from 'express';
 import Feedback from '../models/feedback.mjs';
 import authenticate from '../middleware/authentication.mjs';
+import requireVerifiedMember from '../middleware/requireVerifiedMember.mjs';
 
 const router = express.Router();
 const categories = new Set([
@@ -27,7 +28,7 @@ const presentFeedback = (feedback) => ({
   replies: feedback.replies.map(presentReply),
 });
 
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, requireVerifiedMember, async (req, res) => {
   try {
     const feedback = await Feedback.find()
         .sort({ createdAt: -1 })
@@ -40,7 +41,7 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-router.post('/', authenticate, async (req, res) => {
+router.post('/', authenticate, requireVerifiedMember, async (req, res) => {
   const { title, category, content } = req.body;
   const trimmedTitle = typeof title === 'string' ? title.trim() : '';
   const trimmedContent = typeof content === 'string' ? content.trim() : '';
@@ -67,7 +68,7 @@ router.post('/', authenticate, async (req, res) => {
   }
 });
 
-router.post('/:id/replies', authenticate, async (req, res) => {
+router.post('/:id/replies', authenticate, requireVerifiedMember, async (req, res) => {
   const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
   if (!content) {
     return res.status(400).json({ message: 'Reply content is required.' });

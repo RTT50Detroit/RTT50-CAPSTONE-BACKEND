@@ -1,5 +1,6 @@
 import express from 'express';
 import authenticate from '../middleware/authentication.mjs';
+import requireVerifiedMember from '../middleware/requireVerifiedMember.mjs';
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const profiles = [
   { id: 3, name: "Alice Brown", aboutMe: "Food blogger and photographer." }
 ];
 
-router.get('/', authenticate, (req, res) => {
+router.get('/', authenticate, requireVerifiedMember, (req, res) => {
   // If the token is valid, the middleware attaches `req.registrant` with the
   // decoded payload
   res.status(200).json({
@@ -23,7 +24,7 @@ router.get('/', authenticate, (req, res) => {
 });
 
 // Route for fetching profile data (protected API)
-router.get('/profiles', authenticate, (req, res) => {
+router.get('/profiles', authenticate, requireVerifiedMember, (req, res) => {
   res.status(200).json({ success: true, profiles });
 });
 

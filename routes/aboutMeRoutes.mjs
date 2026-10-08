@@ -2,16 +2,18 @@ import express from 'express';
 import AboutMe from '../models/about.mjs';
 import Registration from '../models/registration.mjs';
 import dotenv from 'dotenv';
+import { MAXIMUM_AGE, MINIMUM_AGE } from '../config/policy.mjs';
 import authenticate from '../middleware/authentication.mjs';
+import requireVerifiedMember from '../middleware/requireVerifiedMember.mjs';
 const router = express.Router();
 dotenv.config();
 
 
 // GET /'api/members'
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, requireVerifiedMember, async (req, res) => {
   try {
     const [members, aboutMeEntries] = await Promise.all([
-      Registration.find().select('-password -role').sort({ createdAt: -1 }).lean(),
+      Registration.find({ ageVerified: true }).select('-password -role -dateOfBirth -email -emailVerified -oauthAccounts -policyVersion -policiesAcceptedAt -ageVerifiedAt').sort({ createdAt: -1 }).lean(),
       AboutMe.find().lean(),
     ]);
     const aboutMeByUserId = new Map(
@@ -43,16 +45,22 @@ router.get('/', authenticate, async (req, res) => {
 
 
 // Update the signed-in member's profile details.
-router.patch('/', authenticate, async (req, res) => {
+router.patch('/', authenticate, requireVerifiedMember, async (req, res) => {
   const { age, gender, aboutMe, occupation, hobbies, links } = req.body;
   const updates = {};
 
   if (age !== undefined) {
+    // Age comes from the verified date of birth and cannot be edited directly.
     const parsedAge = Number(age);
-    if (!Number.isInteger(parsedAge) || parsedAge < 18 || parsedAge > 120) {
-      return res.status(400).json({ message: 'Age must be a whole number between 18 and 120.' });
+    if (!Number.isInteger(parsedAge) || parsedAge < MINIMUM_AGE || parsedAge > MAXIMUM_AGE) {
+      return res.status(400).json({ message: `Age must be a whole number between ${MINIMUM_AGE} and ${MAXIMUM_AGE}.` });
     }
-    updates.age = parsedAge;
+    const existing = await Registration.findById(req.user.id).select('age').lean();
+    if (existing?.age !== undefined && existing.age !== parsedAge) {
+      return res.status(400).json({
+        message: 'Age is based on your verified date of birth and cannot be changed.',
+      });
+    }
   }
   if (gender !== undefined) {
     if (typeof gender !== 'string' || !gender.trim()) {
@@ -115,7 +123,7 @@ router.patch('/', authenticate, async (req, res) => {
         req.user.id,
         updates,
         { new: true, runValidators: true },
-    ).select('-password -role');
+    ).select('-password -role -dateOfBirth');
 
     if (!updatedUser) {
       return res.status(404).json({ message: 'Member not found.' });

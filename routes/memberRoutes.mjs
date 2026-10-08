@@ -2,6 +2,7 @@ import express from 'express';
 import Member from '../models/registration.mjs';
 import { logger } from '../middleware/logger.mjs';
 import authenticate from '../middleware/authentication.mjs';
+import requireVerifiedMember from '../middleware/requireVerifiedMember.mjs';
 import { validate_route_param_id } from '../middleware/validate_request.mjs';
 import { withPresenceStatus } from '../utils/memberPresence.mjs';
 import { requireMaster } from '../middleware/authentication.mjs';
@@ -11,10 +12,26 @@ import upload from '../config/multer.mjs';
 
 const router = express.Router();
 
+// Non-master members only see members who passed the age check; birth dates stay private.
+const visibleMembers = (req) => (
+  req.user?.role === 'master' ? {} : { ageVerified: true }
+);
+// Other members never see contact details, linked social accounts, or birth dates.
+const PRIVATE_FIELDS = '-password -role -email -emailVerified -oauthAccounts -dateOfBirth '
+  + '-ageVerifiedAt -policiesAcceptedAt -policyVersion';
+const hiddenFields = (req) => (
+  req.user?.role === 'master' ? '-password' : PRIVATE_FIELDS
+);
+
 // ========================== ROUTES ==========================
 
 // DELETE ALL MEMBERS
-router.delete('/', authenticate, async (req, res) => {
+router.delete('/', authenticate, requireMaster, async (req, res) => {
+  if (req.query.confirm !== 'DELETE_ALL_MEMBERS') {
+    return res.status(400).json({
+      message: 'Add ?confirm=DELETE_ALL_MEMBERS to delete every member.',
+    });
+  }
   try {
     const delete_all = await Member.deleteMany({});
     logger.warn('Delete attempted: All data has been deleted!');
@@ -26,10 +43,10 @@ router.delete('/', authenticate, async (req, res) => {
 });
 
 // RETRIEVE ALL MEMBERS OR FILTER BY QUERY PARAMETERS
-router.get('/', async (req, res) => {
+router.get('/', authenticate, requireVerifiedMember, async (req, res) => {
   try {
     const { name, age, gender, minAge, maxAge } = req.query;
-    const filters = {};
+    const filters = visibleMembers(req);
 
     if (name) filters.name = { $regex: name, $options: 'i' };
 
@@ -62,7 +79,7 @@ router.get('/', async (req, res) => {
       }
     }
 
-    const results = (await Member.find(filters).select('-password').lean())
+    const results = (await Member.find(filters).select(hiddenFields(req)).lean())
         .map(withPresenceStatus);
     return res.status(200).json(results);
   } catch (e) {
@@ -202,7 +219,12 @@ router.put('/:id', authenticate, requireMaster, validate_route_param_id,
 });
 
 // DELETE SINGLE MEMBER BY ID
-router.delete('/:id', validate_route_param_id, async (req, res) => {
+// Members can delete their own account; master users can delete any account.
+router.delete('/:id', authenticate, validate_route_param_id, async (req, res) => {
+  const isOwnAccount = String(req.user?.id) === req.params.id;
+  if (!isOwnAccount && req.user?.role !== 'master') {
+    return res.status(403).json({ message: 'You can only delete your own account.' });
+  }
   try {
     const delete_one = await Member.findByIdAndDelete(req.params.id);
     if (!delete_one) {
@@ -210,18 +232,19 @@ router.delete('/:id', validate_route_param_id, async (req, res) => {
     }
     logger.warn(`Member with ID ${req.params.id} deleted.`);
     console.warn(`Member with ID ${req.params.id} deleted.`);
-    return res.status(200).json({ message: 'Member deleted successfully!', member: delete_one });
+    await AboutMe.deleteMany({ userId: req.params.id });
+    return res.status(200).json({ message: 'Member deleted successfully!' });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
 // RETRIEVE BY FILTER (NAME, GENDER, OR AGE RANGE)
-router.get('/filter', async (req, res) => {
+router.get('/filter', authenticate, requireVerifiedMember, async (req, res) => {
   const { name, gender, age, minAge, maxAge } = req.query;
 
   try {
-    const filters = {};
+    const filters = visibleMembers(req);
     if (name) filters.name = { $regex: new RegExp(name, 'i') };
 
     if (gender) {
@@ -257,7 +280,7 @@ router.get('/filter', async (req, res) => {
       }
     }
 
-    const filtered_data = (await Member.find(filters).select('-password').lean())
+    const filtered_data = (await Member.find(filters).select(hiddenFields(req)).lean())
         .map(withPresenceStatus);
     if (filtered_data.length === 0) {
       return res.status(404).json({ message: 'No members found matching the criteria.' });
@@ -270,9 +293,10 @@ router.get('/filter', async (req, res) => {
 });
 
 // RETRIEVE BY ID
-router.get('/:id', validate_route_param_id, async (req, res) => {
+router.get('/:id', authenticate, requireVerifiedMember, validate_route_param_id, async (req, res) => {
   try {
-    const member = await Member.findById(req.params.id).select('-password').lean();
+    const member = await Member.findOne({ _id: req.params.id, ...visibleMembers(req) })
+        .select(hiddenFields(req)).lean();
     const get_one = member && withPresenceStatus(member);
     if (!get_one) {
       return res.status(404).json({ error: 'Member not found' });

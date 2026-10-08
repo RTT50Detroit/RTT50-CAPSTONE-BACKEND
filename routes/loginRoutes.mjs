@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import Registration from '../models/registration.mjs';
+import { createSessionPayload } from '../utils/session.mjs';
 import authenticate from '../middleware/authentication.mjs';
 
 const router = express.Router();
@@ -48,13 +49,7 @@ router.post(['/', '/login'], async (req, res) => {
     console.log('JWT_SECRET:', process.env.JWT_SECRET);
     // Generate JWT Token
     const token = jwt.sign(
-        {
-          id: registrant._id,
-          name: registrant.name,
-          email: registrant.email,
-          role: registrant.role || 'member',
-        },
-        // Payload used by the authenticated frontend and API routes.
+        createSessionPayload(registrant),
         process.env.JWT_SECRET, { expiresIn: '1h' });
     setSessionCookie(res, token);
 

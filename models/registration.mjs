@@ -1,12 +1,26 @@
 import mongoose from 'mongoose';
+import { MAXIMUM_AGE, MINIMUM_AGE } from '../config/policy.mjs';
 
 const registrationSchema = new mongoose.Schema({
       name: {
         type: String, required: true,
       }, age: {
-        type: Number, required: true,
+        type: Number,
+        min: MINIMUM_AGE,
+        max: MAXIMUM_AGE,
+      }, dateOfBirth: {
+        type: Date,
+      }, ageVerified: {
+        type: Boolean,
+        default: false,
+      }, ageVerifiedAt: {
+        type: Date,
+      }, policyVersion: {
+        type: String,
+      }, policiesAcceptedAt: {
+        type: Date,
       }, gender: {
-        type: String, required: true,
+        type: String,
       }, email: {
         type: String, required: true, unique: true,
       }, password: {

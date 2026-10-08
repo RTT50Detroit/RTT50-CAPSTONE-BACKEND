@@ -1,11 +1,12 @@
 import express from 'express';
 import Note from '../models/note.mjs';
 import authenticate from '../middleware/authentication.mjs';
+import requireVerifiedMember from '../middleware/requireVerifiedMember.mjs';
 
 const router = express.Router();
 const noteTypes = new Set(['note', 'journal']);
 
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, requireVerifiedMember, async (req, res) => {
   try {
     const notes = await Note.find({ user: req.user.id }).sort({ createdAt: -1 });
     res.json(notes);
@@ -14,7 +15,7 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-router.post('/', authenticate, async (req, res) => {
+router.post('/', authenticate, requireVerifiedMember, async (req, res) => {
   const { title, content, type = 'journal' } = req.body;
 
   if (!content?.trim()) {
@@ -38,7 +39,7 @@ router.post('/', authenticate, async (req, res) => {
   }
 });
 
-router.put('/:id', authenticate, async (req, res) => {
+router.put('/:id', authenticate, requireVerifiedMember, async (req, res) => {
   const { title, content, type } = req.body;
 
   if (type !== undefined && !noteTypes.has(type)) {
@@ -66,7 +67,7 @@ router.put('/:id', authenticate, async (req, res) => {
   }
 });
 
-router.delete('/:id', authenticate, async (req, res) => {
+router.delete('/:id', authenticate, requireVerifiedMember, async (req, res) => {
   try {
     const note = await Note.findOneAndDelete({
       _id: req.params.id,

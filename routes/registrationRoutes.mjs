@@ -7,6 +7,16 @@ import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
+// Members join through social sign-in and the age verification step. These legacy
+// endpoints accept unauthenticated writes (including age and role fields), so they
+// stay off unless explicitly re-enabled.
+router.use((req, res, next) => {
+  if (process.env.ALLOW_PASSWORD_REGISTRATION === 'true') return next();
+  return res.status(403).json({
+    message: 'Registration is available through social sign-in only.',
+  });
+});
+
 const getDefaultProfileImage = (gender) => {
   const normalizedGender = String(gender ?? '').trim().toLowerCase();
 

@@ -1,6 +1,7 @@
 import { config } from 'dotenv';
 import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
+import { MINIMUM_AGE } from '../config/policy.mjs';
 import Registration from '../models/registration.mjs';
 
 for (const file of ['.env.development', '.env']) {
@@ -22,7 +23,7 @@ const master = await Registration.findOneAndUpdate(
       $set: { role: 'master', password },
       $setOnInsert: {
         name: 'Master User',
-        age: 18,
+        age: MINIMUM_AGE,
         gender: 'other',
       },
     },
