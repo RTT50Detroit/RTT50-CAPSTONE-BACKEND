@@ -93,7 +93,15 @@ router.post('/claim', authenticate, requireAdultMember, async (req, res) => {
     }];
     member.resumeSlug = record.slug;
     member.resumeLinkedAt = new Date();
-    await member.save();
+    try {
+      await member.save();
+    } catch (error) {
+      if (error.code === 11000) {
+        await ResumeInvite.updateOne({ _id: record._id }, { $unset: { claimedBy: 1 } });
+        return res.status(409).json({ message: 'That resume is already linked to another member.' });
+      }
+      throw error;
+    }
     return res.json({ message: 'Your resume was added to your profile.', memberId: member._id });
   } catch (error) {
     console.error('Failed to claim resume invite:', error.message);

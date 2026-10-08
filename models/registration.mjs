@@ -22,6 +22,7 @@ const registrationSchema = new mongoose.Schema({
       }, resumeSlug: {
         // Set only when a Relationship Resume invite is claimed; never from client input.
         type: String,
+        index: { unique: true, sparse: true },
       }, resumeLinkedAt: {
         type: Date,
       }, gender: {
