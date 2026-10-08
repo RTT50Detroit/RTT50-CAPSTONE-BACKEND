@@ -2,6 +2,7 @@ import Registration from '../models/registration.mjs';
 import AboutMe from '../models/about.mjs';
 import Note from '../models/note.mjs';
 import Feedback from '../models/feedback.mjs';
+import ResumeInvite from '../models/resumeInvite.mjs';
 import AgeBlock, { hashIdentifier } from '../models/ageBlock.mjs';
 import { MINIMUM_AGE } from '../config/policy.mjs';
 import { calculateAge } from './age.mjs';
@@ -22,6 +23,7 @@ export const removeIneligibleMember = async (member, reason) => {
     AboutMe.deleteMany({ userId: member._id }),
     Note.deleteMany({ user: member._id }),
     Feedback.deleteMany({ author: member._id }),
+    ResumeInvite.deleteMany({ claimedBy: member._id }),
     Registration.deleteOne({ _id: member._id }),
   ]);
   logger.warn(`Removed ineligible member ${member._id}: ${reason}`);

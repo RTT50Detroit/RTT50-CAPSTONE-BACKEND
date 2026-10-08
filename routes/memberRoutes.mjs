@@ -8,6 +8,7 @@ import { withPresenceStatus } from '../utils/memberPresence.mjs';
 import { requireMaster } from '../middleware/authentication.mjs';
 import bcrypt from 'bcrypt';
 import AboutMe from '../models/about.mjs';
+import { withProtectedResumeLink } from '../utils/resumeLink.mjs';
 import upload from '../config/multer.mjs';
 
 const router = express.Router();
@@ -117,7 +118,7 @@ router.post('/', authenticate, requireMaster, upload.single('photo'), async (req
 
     const hashedPassword = await bcrypt.hash(password, 16);
     const parsedHobbies = typeof hobbies === 'string' ? JSON.parse(hobbies) : hobbies;
-    const parsedLinks = typeof links === 'string' ? JSON.parse(links) : links;
+    const parsedLinks = withProtectedResumeLink(typeof links === 'string' ? JSON.parse(links) : links);
     const profileImage = req.file
       ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
       : undefined;
@@ -184,6 +185,13 @@ router.put('/:id', authenticate, requireMaster, validate_route_param_id,
     if (typeof updates.hobbies === 'string') {
       updates.hobbies = JSON.parse(updates.hobbies);
     }
+    if (updates.links !== undefined) {
+      const current = await Member.findById(req.params.id).select('links').lean();
+      const incoming = typeof updates.links === 'string' ? JSON.parse(updates.links) : updates.links;
+      updates.links = withProtectedResumeLink(incoming, current?.links);
+    }
+    delete updates.resumeSlug;
+    delete updates.resumeLinkedAt;
     if (req.file) {
       updates.profileImage =
         `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;

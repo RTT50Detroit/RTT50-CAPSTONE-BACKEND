@@ -2,6 +2,7 @@ import express from 'express';
 import AboutMe from '../models/about.mjs';
 import Registration from '../models/registration.mjs';
 import dotenv from 'dotenv';
+import { withProtectedResumeLink } from '../utils/resumeLink.mjs';
 import { MAXIMUM_AGE, MINIMUM_AGE } from '../config/policy.mjs';
 import authenticate from '../middleware/authentication.mjs';
 import requireVerifiedMember from '../middleware/requireVerifiedMember.mjs';
@@ -93,9 +94,13 @@ router.patch('/', authenticate, requireVerifiedMember, async (req, res) => {
     ))) {
       return res.status(400).json({ message: 'Links must include a label and URL.' });
     }
-    updates.links = links
-        .map(({ label, url }) => ({ label: label.trim(), url: url.trim() }))
-        .filter(({ label, url }) => label && url);
+    // The resume link is set only by a verified invite, so members cannot add or edit it here.
+    const current = await Registration.findById(req.user.id).select('links').lean();
+    updates.links = withProtectedResumeLink(
+        links.map(({ label, url }) => ({ label: label.trim(), url: url.trim() }))
+            .filter(({ label, url }) => label && url),
+        current?.links,
+    );
     if (updates.links.some(({ url }) => {
       try {
         return !['http:', 'https:'].includes(new URL(url).protocol);
