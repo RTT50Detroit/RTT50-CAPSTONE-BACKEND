@@ -31,6 +31,7 @@ const providers = {
         email: profile.email,
         emailVerified: profile.email_verified === true,
         name: profile.name,
+        reportedName: profile.name || '',
       };
     },
   },
@@ -59,6 +60,8 @@ const providers = {
         email: verified?.email,
         emailVerified: Boolean(verified),
         name: profile.name || profile.login,
+        // Only a real display name counts as identity evidence; a handle does not.
+        reportedName: profile.name || '',
       };
     },
   },
@@ -218,13 +221,23 @@ router.get('/:provider/callback', async (req, res) => {
         email: profile.email.toLowerCase(),
         emailVerified: true,
         password: await bcrypt.hash(randomUrlSafe(), 12),
-        oauthAccounts: [{ provider, subject: profile.subject, email: profile.email }],
+        oauthAccounts: [{
+          provider, subject: profile.subject, email: profile.email, reportedName: profile.reportedName,
+        }],
       });
-    } else if (!member.oauthAccounts.some((account) => (
-      account.provider === provider && account.subject === profile.subject
-    ))) {
-      member.oauthAccounts.push({ provider, subject: profile.subject, email: profile.email });
-      member.emailVerified = true;
+    } else {
+      const linked = member.oauthAccounts.find((account) => (
+        account.provider === provider && account.subject === profile.subject
+      ));
+      if (linked) {
+        // Refresh on every sign-in so the name always reflects what the provider says today.
+        linked.reportedName = profile.reportedName;
+      } else {
+        member.oauthAccounts.push({
+          provider, subject: profile.subject, email: profile.email, reportedName: profile.reportedName,
+        });
+        member.emailVerified = true;
+      }
       await member.save();
     }
 

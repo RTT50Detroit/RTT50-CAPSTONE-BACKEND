@@ -8,7 +8,7 @@ import { validateDateOfBirth } from '../utils/age.mjs';
 import { createSessionPayload } from '../utils/session.mjs';
 
 const router = express.Router();
-const allowedGenders = ['male', 'female', 'other', 'prefer-not-to-say'];
+const allowedGenders = ['male', 'female', 'other'];
 const messages = {
   required: 'Enter your date of birth.',
   invalid: 'Enter a valid date of birth.',

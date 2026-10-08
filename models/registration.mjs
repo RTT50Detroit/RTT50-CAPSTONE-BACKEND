@@ -23,6 +23,8 @@ const registrationSchema = new mongoose.Schema({
         // Set only when a Relationship Resume invite is claimed; never from client input.
         type: String,
         index: { unique: true, sparse: true },
+      }, resumeIdentityVerifiedAt: {
+        type: Date,
       }, resumeLinkedAt: {
         type: Date,
       }, gender: {
@@ -40,6 +42,7 @@ const registrationSchema = new mongoose.Schema({
           provider: { type: String, enum: ['google', 'github'] },
           subject: { type: String },
           email: { type: String },
+          reportedName: { type: String },
         }],
         default: [],
       }, emailVerified: {

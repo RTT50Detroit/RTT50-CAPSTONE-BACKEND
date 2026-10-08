@@ -5,6 +5,9 @@ import { requireAdultMember } from '../middleware/requireVerifiedMember.mjs';
 import ResumeInvite from '../models/resumeInvite.mjs';
 import Registration from '../models/registration.mjs';
 import { isResumeLabel } from '../utils/resumeLink.mjs';
+import { findIdentityMismatches } from '../utils/identityMatch.mjs';
+import { MINIMUM_AGE } from '../config/policy.mjs';
+import { parseDateOfBirth, validateDateOfBirth } from '../utils/age.mjs';
 
 // The Relationship Resume is the front door. After a person publishes a resume there, its
 // server asks for an invite here (shared secret). The person then joins, and the resume link
@@ -43,10 +46,35 @@ router.post('/invites', requireIntegrationSecret, async (req, res) => {
   if (!SLUG_PATTERN.test(slug)) {
     return res.status(400).json({ message: 'A valid resume link name is required.' });
   }
+
+  // The resume owner's declared identity travels with the invite and is checked on claim.
+  const declaredName = String(req.body?.name || '').trim();
+  const declaredSex = String(req.body?.sex || '').toLowerCase();
+  const dob = validateDateOfBirth(req.body?.dateOfBirth);
+  if (declaredName.length < 3 || declaredName.length > 100 || !['male', 'female', 'other'].includes(declaredSex)) {
+    return res.status(400).json({ code: 'IDENTITY_REQUIRED', message: 'Name, date of birth and sex are required.' });
+  }
+  if (!dob.valid && dob.reason !== 'underage') {
+    return res.status(400).json({ code: 'IDENTITY_REQUIRED', message: 'A valid date of birth is required.' });
+  }
+  if (!dob.valid) {
+    return res.status(403).json({
+      code: 'UNDER_MINIMUM_AGE',
+      message: `Resumes can only be sent to The Social Match Game by people ${MINIMUM_AGE} or older.`,
+    });
+  }
+
   try {
     const invite = crypto.randomBytes(24).toString('base64url');
     const expiresAt = new Date(Date.now() + INVITE_LIFETIME_MS);
-    await ResumeInvite.create({ inviteHash: hashInvite(invite), slug, expiresAt });
+    await ResumeInvite.create({
+      inviteHash: hashInvite(invite),
+      slug,
+      expiresAt,
+      declaredName,
+      declaredDateOfBirth: parseDateOfBirth(String(req.body.dateOfBirth)),
+      declaredSex,
+    });
     const frontend = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
     return res.status(201).json({
       invite,
@@ -82,9 +110,23 @@ router.post('/claim', authenticate, requireAdultMember, async (req, res) => {
       return res.status(400).json({ message: 'That invite is invalid, expired or already used.' });
     }
 
-    const member = await Registration.findById(req.user.id).select('links resumeSlug');
+    const member = await Registration.findById(req.user.id)
+        .select('links resumeSlug name gender dateOfBirth oauthAccounts');
     if (!member) {
       return res.status(404).json({ message: 'Member not found.' });
+    }
+
+    const mismatches = findIdentityMismatches({
+      name: record.declaredName, dateOfBirth: record.declaredDateOfBirth, sex: record.declaredSex,
+    }, member);
+    if (mismatches.length) {
+      await ResumeInvite.deleteOne({ _id: record._id });
+      console.warn(`Resume identity mismatch for member ${member._id}: ${mismatches.join(', ')}`);
+      return res.status(409).json({
+        code: 'IDENTITY_MISMATCH',
+        fields: mismatches,
+        message: 'Your resume details must match your verified Social Match profile and your Google or GitHub account. Correct them and send your resume again.',
+      });
     }
     const others = (member.links || []).filter(({ label }) => !isResumeLabel(label));
     member.links = [...others, {
@@ -93,6 +135,7 @@ router.post('/claim', authenticate, requireAdultMember, async (req, res) => {
     }];
     member.resumeSlug = record.slug;
     member.resumeLinkedAt = new Date();
+    member.resumeIdentityVerifiedAt = member.resumeLinkedAt;
     try {
       await member.save();
     } catch (error) {
@@ -102,6 +145,8 @@ router.post('/claim', authenticate, requireAdultMember, async (req, res) => {
       }
       throw error;
     }
+    // The declared details have done their job; remove them with the invite.
+    await ResumeInvite.deleteOne({ _id: record._id });
     return res.json({ message: 'Your resume was added to your profile.', memberId: member._id });
   } catch (error) {
     console.error('Failed to claim resume invite:', error.message);
