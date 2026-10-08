@@ -17,6 +17,7 @@ const router = express.Router();
 const INVITE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 const RESUME_ORIGIN = 'https://therelationshipresume.netlify.app';
 const RESUME_LABEL = 'The Relationship Resume';
+const MAX_IDENTITY_ATTEMPTS = 3;
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,48}[a-z0-9])?$/i;
 
 const hashInvite = (invite) => crypto
@@ -102,7 +103,12 @@ router.post('/claim', authenticate, requireAdultMember, async (req, res) => {
   }
   try {
     const record = await ResumeInvite.findOneAndUpdate(
-        { inviteHash: hashInvite(invite), claimedBy: { $exists: false }, expiresAt: { $gt: new Date() } },
+        {
+          inviteHash: hashInvite(invite),
+          claimedBy: { $exists: false },
+          expiresAt: { $gt: new Date() },
+          attempts: { $lt: MAX_IDENTITY_ATTEMPTS },
+        },
         { claimedBy: req.user.id },
         { new: true },
     );
@@ -120,14 +126,24 @@ router.post('/claim', authenticate, requireAdultMember, async (req, res) => {
       name: record.declaredName, dateOfBirth: record.declaredDateOfBirth, sex: record.declaredSex,
     }, member);
     if (mismatches.length) {
-      await ResumeInvite.deleteOne({ _id: record._id });
+      const attemptsUsed = record.attempts + 1;
+      const retry = attemptsUsed < MAX_IDENTITY_ATTEMPTS;
       console.warn(`Resume identity mismatch for member ${member._id}: ${mismatches.join(', ')}`);
+      // Keep the invite so the member can fix the problem and check again, within a small limit.
+      if (retry) {
+        await ResumeInvite.updateOne({ _id: record._id }, { $inc: { attempts: 1 }, $unset: { claimedBy: 1 } });
+      } else {
+        await ResumeInvite.deleteOne({ _id: record._id });
+      }
       return res.status(409).json({
         code: 'IDENTITY_MISMATCH',
         fields: mismatches,
-        message: 'Your resume details must match your verified Social Match profile and your Google or GitHub account. Correct them and send your resume again.',
+        retry,
+        attemptsLeft: MAX_IDENTITY_ATTEMPTS - attemptsUsed,
+        message: 'Your resume details must match your verified Social Match profile and your Google or GitHub account.',
       });
     }
+
     const others = (member.links || []).filter(({ label }) => !isResumeLabel(label));
     member.links = [...others, {
       label: RESUME_LABEL,

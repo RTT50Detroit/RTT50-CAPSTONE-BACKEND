@@ -10,6 +10,7 @@ const resumeInviteSchema = new mongoose.Schema({
   declaredName: { type: String, required: true },
   declaredDateOfBirth: { type: Date, required: true },
   declaredSex: { type: String, enum: ['male', 'female', 'other'], required: true },
+  attempts: { type: Number, default: 0 },
   claimedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'RegistrationModel' },
   expiresAt: { type: Date, required: true, index: { expires: 0 } },
 }, { timestamps: true });
